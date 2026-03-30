@@ -1,0 +1,62 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import type { Trip } from "../data/mockData";
+import { useTheme } from "../context/ThemeContext";
+import { STATUS_COLORS, STATUS_COLORS_DARK } from "../constants/theme";
+import { formatCurrency } from "../utils/formatCurrency";
+
+export function TripCard({ trip }: { trip: Trip }) {
+  const { colors, isDark } = useTheme();
+  const statusMap = isDark ? STATUS_COLORS_DARK : STATUS_COLORS;
+  const statusStyle = statusMap[trip.status];
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/(tabs)/trips/${trip.id}` as any)}
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+    >
+      <View style={styles.row}>
+        <Image source={{ uri: trip.coverPhoto }} style={styles.image} />
+        <View style={styles.info}>
+          <View style={styles.titleRow}>
+            <View style={styles.titleWrap}>
+              <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{trip.name}</Text>
+              <Text style={[styles.dest, { color: colors.textMuted }]}>{trip.flag} {trip.destination}</Text>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+              <Text style={[styles.statusText, { color: statusStyle.text }]}>{trip.status}</Text>
+            </View>
+          </View>
+
+          <View style={styles.bottomRow}>
+            <View style={styles.dateRow}>
+              <Ionicons name="calendar-outline" size={11} color={colors.textMuted} />
+              <Text style={[styles.dateText, { color: colors.textMuted }]}>
+                {new Date(trip.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </Text>
+            </View>
+            <Text style={[styles.amount, { color: colors.text }]}>{formatCurrency(trip.spent, trip.currency)}</Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { borderRadius: 16, padding: 12, borderWidth: 1, marginBottom: 10 },
+  row: { flexDirection: "row" },
+  image: { width: 80, height: 80, borderRadius: 12, marginRight: 12 },
+  info: { flex: 1, justifyContent: "center" },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  titleWrap: { flex: 1, marginRight: 8 },
+  name: { fontSize: 15, fontFamily: "Inter-Bold", marginBottom: 2 },
+  dest: { fontSize: 11, fontFamily: "Inter-Medium", marginBottom: 6 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusText: { fontSize: 9, fontFamily: "Inter-Bold", textTransform: "uppercase" },
+  bottomRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateRow: { flexDirection: "row", alignItems: "center" },
+  dateText: { fontSize: 10, fontFamily: "Inter-Bold", marginLeft: 4 },
+  amount: { fontSize: 14, fontFamily: "Inter-Bold" },
+});
