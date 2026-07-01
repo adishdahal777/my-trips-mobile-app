@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { MOCK_USER } from "../data/mockData";
+import { apiFetch } from "../services/api";
 
 interface User {
   id: string; name: string; email: string;
@@ -35,32 +35,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sendOtp = async (email: string): Promise<boolean> => {
-    console.log(`[MOCK] Sending OTP 123456 to ${email}`);
-    return true;
+    try {
+      await apiFetch("/auth/otp/send", { method: "POST", body: { email } });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
-  const login = async (email: string, otp: string): Promise<boolean> => {
-    if (otp === "123456") {
-      // For mock purposes, we'll just use the MOCK_USER or create a session
-      const userData = (email === MOCK_USER.email) ? MOCK_USER : { ...MOCK_USER, email };
-      await AsyncStorage.setItem("mytrips_auth", JSON.stringify({ token: "mock-jwt-token", user: userData }));
-      setUser(userData as User);
+  const verify = async (email: string, otp: string, name?: string): Promise<boolean> => {
+    try {
+      const res = await apiFetch("/auth/otp/verify", { method: "POST", body: { email, otp, name } });
+      await AsyncStorage.setItem("mytrips_auth", JSON.stringify({ token: res.access_token, user: res.user }));
+      setUser(res.user);
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
-  const register = async (name: string, email: string, otp: string): Promise<boolean> => {
-    if (otp === "123456") {
-      const newUser: User = { ...MOCK_USER, id: "u" + Date.now(), name, email };
-      await AsyncStorage.setItem("mytrips_auth", JSON.stringify({ token: "mock-jwt-token", user: newUser }));
-      setUser(newUser);
-      return true;
-    }
-    return false;
-  };
+  const login = (email: string, otp: string) => verify(email, otp);
+  const register = (name: string, email: string, otp: string) => verify(email, otp, name);
 
   const logout = async () => {
+    try {
+      await apiFetch("/auth/logout", { method: "POST" });
+    } catch {
+      // best-effort: still clear local session
+    }
     await AsyncStorage.removeItem("mytrips_auth");
     setUser(null);
   };

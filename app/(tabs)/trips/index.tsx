@@ -1,19 +1,20 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import React, { useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TripCard } from "../../../components/TripCard";
 import { useTheme } from "../../../context/ThemeContext";
-import { MOCK_TRIPS } from "../../../data/mockData";
+import { useTrips } from "../../../context/TripContext";
 
 const FILTERS = ["All", "Ongoing", "Upcoming", "Completed"];
 
 export default function TripsIndex() {
   const { colors } = useTheme();
+  const { trips } = useTrips();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
 
-  const filteredTrips = MOCK_TRIPS.filter((t) => {
+  const filteredTrips = trips.filter((t) => {
     const matchSearch =
       t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.destination.toLowerCase().includes(search.toLowerCase());

@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Trip } from "../data/mockData";
 import { useTheme } from "../context/ThemeContext";
@@ -18,7 +18,7 @@ export function TripSmallCard({ trip, isAddButton }: TripSmallCardProps) {
   if (isAddButton) {
     return (
       <Pressable
-        onPress={() => router.push("/(tabs)/trips/create")}
+        onPress={() => router.push("CreateTrip")}
         style={[styles.card, styles.addCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
       >
         <View style={[styles.addIconWrap, { backgroundColor: colors.card }]}>
@@ -37,7 +37,7 @@ export function TripSmallCard({ trip, isAddButton }: TripSmallCardProps) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/(tabs)/trips/${trip.id}`)}
+      onPress={() => router.push("TripDetail", { id: trip.id })}
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       {/* Image */}

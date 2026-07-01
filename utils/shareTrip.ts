@@ -1,4 +1,4 @@
-import * as Linking from "expo-linking";
+import { Linking } from "react-native";
 import { Share, Platform } from "react-native";
 import type { Trip } from "../data/mockData";
 
@@ -15,7 +15,7 @@ const WEB_DOMAIN = "https://mytrips.app";
  */
 export function getTripDeepLink(tripId: string): string {
   // Custom scheme link — opens the app directly if installed
-  return Linking.createURL(`/public-trip`, { queryParams: { id: tripId } });
+  return `mytripsmobileapp://public-trip?id=${tripId}`;
 }
 
 /**
@@ -76,11 +76,8 @@ export async function shareTrip(trip: Trip): Promise<void> {
  */
 export function parseTripFromUrl(url: string): string | null {
   try {
-    const parsed = Linking.parse(url);
-    if (parsed.path?.includes("public-trip") && parsed.queryParams?.id) {
-      return parsed.queryParams.id as string;
-    }
-    return null;
+    const u = new URL(url);
+    return u.searchParams.get('id');
   } catch {
     return null;
   }

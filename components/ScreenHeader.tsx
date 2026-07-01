@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 

@@ -1,14 +1,18 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../../utils/navigation";
 import React from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useTrips } from "../../context/TripContext";
+import { calculateUserStats } from "../../utils/calculateStats";
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
+  const { trips } = useTrips();
+  const stats = React.useMemo(() => calculateUserStats(trips), [trips]);
   const [notifs, setNotifs] = React.useState(true);
 
   if (!user) return null;
@@ -51,9 +55,9 @@ export default function Profile() {
 
           <View style={styles.statsRow}>
             {[
-              { val: user.totalTrips, label: "Trips" },
-              { val: user.countries, label: "Countries" },
-              { val: `${(user.kmTraveled / 1000).toFixed(1)}k`, label: "KM" },
+              { val: stats.totalTrips, label: "Trips" },
+              { val: stats.countriesVisited, label: "Countries" },
+              { val: `${(stats.totalKm / 1000).toFixed(1)}k`, label: "KM" },
             ].map((s, i) => (
               <View key={i} style={[styles.statItem, i < 2 && { borderRightWidth: 1, borderRightColor: colors.borderLight }]}>
                 <Text style={[styles.statValue, { color: colors.text }]}>{s.val}</Text>

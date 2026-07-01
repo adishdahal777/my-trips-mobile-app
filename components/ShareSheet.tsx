@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import * as Clipboard from "expo-clipboard";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Clipboard from "@react-native-clipboard/clipboard";
 import React, { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View, Animated } from "react-native";
 import { useTheme } from "../context/ThemeContext";
@@ -21,10 +21,7 @@ export function ShareSheet({ visible, onClose, trip }: Props) {
 
   const handleCopyLink = async () => {
     try {
-      // expo-clipboard might not be installed, fallback gracefully
-      if (Clipboard && Clipboard.setStringAsync) {
-        await Clipboard.setStringAsync(deepLink);
-      }
+      Clipboard.setString(deepLink);
     } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

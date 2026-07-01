@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../../utils/navigation";
 import { useRef, useState } from "react";
 import { Animated, Dimensions, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -44,7 +44,7 @@ export default function Register() {
     setError(""); setLoading(true);
     const ok = await register(name, email, otp);
     setLoading(false);
-    if (ok) router.replace("/(tabs)/dashboard"); else { setError("Invalid OTP. Try 123456"); shake(); }
+    if (!ok) { setError("Invalid or expired OTP."); shake(); }
   };
 
   return (
@@ -161,7 +161,7 @@ export default function Register() {
               )}
             </Animated.View>
 
-            <Pressable onPress={() => router.push("/(auth)/login")} style={styles.footerLink}>
+            <Pressable onPress={() => router.push("Auth", { screen: "Login" })} style={styles.footerLink}>
               <Text style={[styles.footerText, { color: colors.textSecondary }]}>
                 Already have an account? <Text style={[styles.footerLinkBold, { color: colors.accent }]}>Login</Text>
               </Text>

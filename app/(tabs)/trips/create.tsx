@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { launchImageLibrary } from "react-native-image-picker";
+import { router } from "../../../utils/navigation";
 import React, { useState } from "react";
-import { Animated, FlatList, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
+import { Alert, Animated, FlatList, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomSheet } from "../../../components/BottomSheet";
+import { OsmMapView } from "../../../components/OsmMapView";
 import { GradientButton } from "../../../components/GradientButton";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { useTheme } from "../../../context/ThemeContext";
@@ -23,6 +23,7 @@ export default function CreateTrip() {
   const [searchQ, setSearchQ] = useState("");
   const [searchRes, setSearchRes] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const [draft, setDraft] = useState({
     name: "", type: "", transport: "flight",
@@ -96,9 +97,10 @@ export default function CreateTrip() {
     setDraft({ ...draft, route: relabeled });
   };
 
-  const pickImage = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [16, 9], quality: 0.8 });
-    if (!r.canceled) setDraft({ ...draft, coverPhoto: r.assets[0].uri });
+  const pickImage = () => {
+    launchImageLibrary({ mediaType: "photo", quality: 0.8 }, (r) => {
+      if (!r.didCancel && r.assets?.[0]?.uri) setDraft({ ...draft, coverPhoto: r.assets[0].uri });
+    });
   };
 
   const updatePref = (key: keyof TripPreferences, val: string) => {
@@ -106,6 +108,7 @@ export default function CreateTrip() {
   };
 
   const next = () => {
+    if (isCreating) return;
     if (step < 4) {
       const n = step + 1;
       Animated.timing(progressAnim, { toValue: n * 0.25, duration: 300, useNativeDriver: false }).start();
@@ -134,28 +137,18 @@ export default function CreateTrip() {
       visibility: "private",
       privacySettings: { photos: false, notes: false, expenses: false },
     };
-    await addTrip(trip);
-    router.replace(`/(tabs)/trips/${trip.id}` as any);
+    setIsCreating(true);
+    try {
+      await addTrip(trip);
+      router.replace("Main");
+    } catch (e: any) {
+      Alert.alert("Couldn't create trip", e?.message ?? "Please try again.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const stopColor = (c: string) => c === "green" ? colors.success : c === "coral" ? colors.coral : colors.accent;
-
-  const getMapRegion = () => {
-    if (draft.route.length === 0) return { latitude: 27.7, longitude: 85.3, latitudeDelta: 5, longitudeDelta: 5 };
-    if (draft.route.length === 1) return { latitude: draft.route[0].lat, longitude: draft.route[0].lng, latitudeDelta: 0.5, longitudeDelta: 0.5 };
-    const lats = draft.route.map((s: any) => s.lat);
-    const lngs = draft.route.map((s: any) => s.lng);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    return {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLng + maxLng) / 2,
-      latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.5),
-      longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.5),
-    };
-  };
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
@@ -248,17 +241,11 @@ export default function CreateTrip() {
               {/* Map */}
               <View style={[styles.mapContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 {draft.route.length > 0 ? (
-                  <MapView style={styles.flex1} region={getMapRegion()}>
-                    <UrlTile urlTemplate="https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png" maximumZ={19} flipY={false} />
-                    <Polyline coordinates={draft.route.map((s: any) => ({ latitude: s.lat, longitude: s.lng }))} strokeColor={colors.accent} strokeWidth={3} lineDashPattern={[0]} />
-                    {draft.route.map((s: any) => (
-                      <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }}>
-                        <View style={[styles.marker, { backgroundColor: stopColor(s.color), shadowColor: stopColor(s.color) }]}>
-                          <Text style={styles.markerText}>{s.label}</Text>
-                        </View>
-                      </Marker>
-                    ))}
-                  </MapView>
+                  <OsmMapView
+                    style={styles.flex1}
+                    strokeColor={colors.accent}
+                    stops={draft.route.map((s: any) => ({ id: s.id, lat: s.lat, lng: s.lng, color: s.color, label: s.label }))}
+                  />
                 ) : (
                   <View style={styles.emptyMap}>
                     <Ionicons name="map-outline" size={40} color={colors.textMuted} />
@@ -501,7 +488,11 @@ export default function CreateTrip() {
               </Pressable>
             )}
             <View style={styles.flex1}>
-              <GradientButton title={step === 4 ? "Create Trip 🚀" : "Next →"} onPress={next} />
+              <GradientButton
+                title={isCreating ? "Creating…" : step === 4 ? "Create Trip 🚀" : "Next →"}
+                onPress={next}
+                disabled={isCreating}
+              />
             </View>
           </View>
         </ScrollView>
@@ -540,8 +531,6 @@ const styles = StyleSheet.create({
   mapContainer: { height: 220, borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 12 },
   emptyMap: { flex: 1, alignItems: "center", justifyContent: "center" },
   emptyMapText: { fontSize: 12, fontFamily: "Inter-Medium", marginTop: 8 },
-  marker: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: "#FFF", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
-  markerText: { color: "#FFF", fontFamily: "Inter-Bold", fontSize: 10 },
   stopsCard: { borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 4 },
   stopsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   stopsTitle: { fontSize: 15, fontFamily: "Inter-Bold" },
