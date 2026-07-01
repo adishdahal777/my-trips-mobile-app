@@ -95,7 +95,7 @@ export default function PublicFeed() {
         {featuredTrip && (
           <View style={styles.featuredSection}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>🔥 Featured Trip</Text>
-            <Pressable onPress={() => router.push(`/public-trip?id=${featuredTrip.id}` as any)}>
+            <Pressable onPress={() => router.push("PublicTrip", { id: featuredTrip.id })}>
               <View style={[styles.featuredCard, { borderColor: colors.border }]}>
                 <Image source={{ uri: featuredTrip.coverPhoto }} style={styles.featuredImage} />
                 <View style={styles.featuredGradient} />

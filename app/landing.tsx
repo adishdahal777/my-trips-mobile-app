@@ -1,18 +1,32 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
-import { MOCK_PUBLIC_TRIPS, MOCK_DESTINATIONS } from "../data/mockData";
+import type { Trip } from "../data/mockData";
+import { MOCK_DESTINATIONS } from "../data/mockData";
+import { apiFetch } from "../services/api";
 
 const { width: SW } = Dimensions.get("window");
 
 export default function Landing() {
   const { colors } = useTheme();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [feedTrips, setFeedTrips] = useState<Trip[]>([]);
 
-  const topTrips = [...MOCK_PUBLIC_TRIPS].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 4);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/feed");
+        setFeedTrips(res.data);
+      } catch {
+        setFeedTrips([]);
+      }
+    })();
+  }, []);
+
+  const topTrips = [...feedTrips].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 4);
   const topDests = MOCK_DESTINATIONS.slice(0, 4);
 
   return (
@@ -63,7 +77,7 @@ export default function Landing() {
             {/* Social proof */}
             <View style={styles.socialProof}>
               <View style={styles.avatarStack}>
-                {MOCK_PUBLIC_TRIPS.slice(0, 4).map((t, i) => (
+                {feedTrips.slice(0, 4).map((t, i) => (
                   <Image
                     key={t.id}
                     source={{ uri: t.user?.avatar }}

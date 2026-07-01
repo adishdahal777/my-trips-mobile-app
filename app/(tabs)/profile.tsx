@@ -1,5 +1,4 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { router } from "../../utils/navigation";
 import React from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -116,7 +115,6 @@ export default function Profile() {
           <Pressable
             onPress={async () => {
               await logout();
-              router.replace("/(auth)/login");
             }}
             style={[styles.logoutBtn, { backgroundColor: colors.card, borderColor: colors.dangerLight }]}
           >
