@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
 import React, { useRef } from "react";
 import { Animated, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -46,14 +46,14 @@ export default function Landing() {
 
             <View style={styles.heroCTAs}>
               <Pressable
-                onPress={() => router.push("/(auth)/register")}
+                onPress={() => router.push("Auth", { screen: "Register" })}
                 style={styles.primaryBtn}
               >
                 <Text style={styles.primaryBtnText}>Start Your Journey</Text>
                 <Ionicons name="arrow-forward" size={16} color="#FFF" />
               </Pressable>
               <Pressable
-                onPress={() => router.push("/(auth)/login")}
+                onPress={() => router.push("Auth", { screen: "Login" })}
                 style={[styles.secondaryBtn, { borderColor: "rgba(255,255,255,0.3)" }]}
               >
                 <Text style={styles.secondaryBtnText}>Sign In</Text>
@@ -181,7 +181,7 @@ export default function Landing() {
         <View style={[styles.bottomCTA, { backgroundColor: colors.accent }]}>
           <Text style={styles.ctaTitle}>Ready to explore?</Text>
           <Text style={styles.ctaSub}>Browse public trips from travelers around the world</Text>
-          <Pressable onPress={() => router.push("/public-feed")} style={styles.ctaBtn}>
+          <Pressable onPress={() => router.push("PublicFeed")} style={styles.ctaBtn}>
             <Text style={[styles.ctaBtnText, { color: colors.accent }]}>Browse Trips</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.accent} />
           </Pressable>

@@ -1,22 +1,46 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
+import { useRoute } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
 import { Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OsmMapView } from "../components/OsmMapView";
 import { ShareSheet } from "../components/ShareSheet";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { MOCK_PUBLIC_TRIPS } from "../data/mockData";
+import type { Trip } from "../data/mockData";
+import { apiFetch } from "../services/api";
 import { formatCurrency } from "../utils/formatCurrency";
 
 const { width: SW } = Dimensions.get("window");
 
 export default function PublicTrip() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { isAuthenticated } = useAuth();
+  const route = useRoute<any>();
+  const id = route.params?.id as string;
 
-  const trip = useMemo(() => MOCK_PUBLIC_TRIPS.find((t) => t.id === id), [id]);
+  const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
   const [shareVisible, setShareVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch(`/public-trips/${id}`);
+        setTrip(res.data);
+      } catch {
+        setTrip(null);
+      }
+    })();
+  }, [id]);
+
+  if (trip === undefined) {
+    return (
+      <SafeAreaView style={[styles.center, { backgroundColor: colors.background }]}>
+        <Ionicons name="hourglass-outline" size={48} color={colors.textMuted} />
+      </SafeAreaView>
+    );
+  }
 
   if (!trip) {
     return (
@@ -96,27 +120,13 @@ export default function PublicTrip() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Route</Text>
             <View style={[styles.mapWrap, { borderColor: colors.border }]}>
-              <MapView
+              <OsmMapView
                 style={styles.map}
-                initialRegion={{
-                  latitude: trip.route[0].lat,
-                  longitude: trip.route[0].lng,
-                  latitudeDelta: 4,
-                  longitudeDelta: 4,
-                }}
+                strokeColor={colors.accent}
                 scrollEnabled={false}
                 zoomEnabled={false}
-              >
-                <UrlTile urlTemplate="https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png" maximumZ={19} flipY={false} />
-                <Polyline
-                  coordinates={trip.route.map((s) => ({ latitude: s.lat, longitude: s.lng }))}
-                  strokeColor={colors.accent}
-                  strokeWidth={3}
-                />
-                {trip.route.map((s) => (
-                  <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }} title={s.name} />
-                ))}
-              </MapView>
+                stops={trip.route.map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, color: s.color, label: s.label }))}
+              />
             </View>
             <View style={styles.routeList}>
               {trip.route.map((s, i) => (
@@ -197,15 +207,17 @@ export default function PublicTrip() {
         )}
 
         {/* CTA Banner */}
-        <View style={[styles.ctaBanner, { backgroundColor: colors.accent }]}>
-          <Ionicons name="airplane-outline" size={24} color="#FFF" />
-          <Text style={styles.ctaTitle}>Inspired? Plan your own trip!</Text>
-          <Text style={styles.ctaSub}>Sign up free and start tracking your adventures</Text>
-          <Pressable onPress={() => router.push("/(auth)/register")} style={styles.ctaBtn}>
-            <Text style={[styles.ctaBtnText, { color: colors.accent }]}>Create Free Account</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.accent} />
-          </Pressable>
-        </View>
+        {!isAuthenticated && (
+          <View style={[styles.ctaBanner, { backgroundColor: colors.accent }]}>
+            <Ionicons name="airplane-outline" size={24} color="#FFF" />
+            <Text style={styles.ctaTitle}>Inspired? Plan your own trip!</Text>
+            <Text style={styles.ctaSub}>Sign up free and start tracking your adventures</Text>
+            <Pressable onPress={() => router.push("Auth", { screen: "Register" })} style={styles.ctaBtn}>
+              <Text style={[styles.ctaBtnText, { color: colors.accent }]}>Create Free Account</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.accent} />
+            </Pressable>
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

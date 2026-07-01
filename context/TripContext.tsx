@@ -1,9 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Expense, MOCK_TRIPS, Note, Photo, PrivacySettings, Trip } from "../data/mockData";
+import { Expense, Note, Photo, PrivacySettings, Trip } from "../data/mockData";
+import { apiFetch, uploadImage } from "../services/api";
+import { useAuth } from "./AuthContext";
 
 interface TripCtx {
   trips: Trip[];
+  isLoading: boolean;
   getTripById: (id: string) => Trip | undefined;
   addTrip: (trip: Trip) => Promise<void>;
   updateTrip: (id: string, data: Partial<Trip>) => Promise<void>;
@@ -23,65 +25,128 @@ interface TripCtx {
 }
 
 const TripContext = createContext<TripCtx>({} as TripCtx);
-const STORAGE_KEY = "mytrips_data";
 
 export function TripProvider({ children }: { children: React.ReactNode }) {
-  const [trips, setTrips] = useState<Trip[]>(MOCK_TRIPS);
+  const { isAuthenticated } = useAuth();
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setTrips([]);
+      return;
+    }
     (async () => {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) setTrips(JSON.parse(stored));
+      setIsLoading(true);
+      try {
+        const res = await apiFetch("/trips");
+        setTrips(res.data);
+      } catch {
+        setTrips([]);
+      }
+      setIsLoading(false);
     })();
-  }, []);
+  }, [isAuthenticated]);
 
-  const persist = async (updated: Trip[]) => {
-    setTrips(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
+  const replaceTrip = (updated: Trip) => setTrips((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
 
   const getTripById = (id: string) => trips.find((t) => t.id === id);
 
-  const addTrip = async (trip: Trip) => persist([...trips, trip]);
-  const updateTrip = async (id: string, data: Partial<Trip>) =>
-    persist(trips.map((t) => (t.id === id ? { ...t, ...data } : t)));
-  const deleteTrip = async (id: string) => persist(trips.filter((t) => t.id !== id));
+  const addTrip = async (trip: Trip) => {
+    const coverPhoto = trip.coverPhoto ? await uploadImage(trip.coverPhoto) : trip.coverPhoto;
+    const res = await apiFetch("/trips", {
+      method: "POST",
+      body: {
+        name: trip.name, destination: trip.destination, flag: trip.flag,
+        startDate: trip.startDate, endDate: trip.endDate, budget: trip.budget,
+        currency: trip.currency, coverPhoto, description: trip.description,
+        transport: trip.transport, route: trip.route, preferences: trip.preferences,
+      },
+    });
+    setTrips((prev) => [...prev, res.data]);
+  };
 
-  const addExpense = async (tripId: string, expense: Expense) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, expenses: [...t.expenses, expense], spent: t.spent + expense.amount } : t));
-  const deleteExpense = async (tripId: string, expenseId: string) =>
-    persist(trips.map((t) => {
-      if (t.id !== tripId) return t;
-      const exp = t.expenses.find((e) => e.id === expenseId);
-      return { ...t, expenses: t.expenses.filter((e) => e.id !== expenseId), spent: t.spent - (exp?.amount || 0) };
-    }));
-  const toggleExpensePrivacy = async (tripId: string, expenseId: string) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, expenses: t.expenses.map((e) => e.id === expenseId ? { ...e, isPrivate: !e.isPrivate } : e) } : t));
+  const updateTrip = async (id: string, data: Partial<Trip>) => {
+    const coverPhoto = data.coverPhoto ? await uploadImage(data.coverPhoto) : undefined;
+    const res = await apiFetch(`/trips/${id}`, {
+      method: "PATCH",
+      body: { ...data, ...(coverPhoto ? { coverPhoto } : {}) },
+    });
+    replaceTrip(res.data);
+  };
 
-  const addPhoto = async (tripId: string, photo: Photo) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, photos: [...t.photos, photo] } : t));
-  const deletePhoto = async (tripId: string, photoId: string) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, photos: t.photos.filter((p) => p.id !== photoId) } : t));
-  const togglePhotoPrivacy = async (tripId: string, photoId: string) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, photos: t.photos.map((p) => p.id === photoId ? { ...p, isPrivate: !p.isPrivate } : p) } : t));
+  const deleteTrip = async (id: string) => {
+    await apiFetch(`/trips/${id}`, { method: "DELETE" });
+    setTrips((prev) => prev.filter((t) => t.id !== id));
+  };
 
-  const addNote = async (tripId: string, note: Note) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, notes: [...t.notes, note] } : t));
-  const updateNote = async (tripId: string, noteId: string, data: Partial<Note>) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, notes: t.notes.map((n) => n.id === noteId ? { ...n, ...data } : n) } : t));
-  const deleteNote = async (tripId: string, noteId: string) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, notes: t.notes.filter((n) => n.id !== noteId) } : t));
-  const toggleNotePrivacy = async (tripId: string, noteId: string) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, notes: t.notes.map((n) => n.id === noteId ? { ...n, isPrivate: !n.isPrivate } : n) } : t));
+  const addExpense = async (tripId: string, expense: Expense) => {
+    const res = await apiFetch(`/trips/${tripId}/expenses`, { method: "POST", body: expense });
+    replaceTrip(res.data);
+  };
+  const deleteExpense = async (tripId: string, expenseId: string) => {
+    const res = await apiFetch(`/trips/${tripId}/expenses/${expenseId}`, { method: "DELETE" });
+    replaceTrip(res.data);
+  };
+  const toggleExpensePrivacy = async (tripId: string, expenseId: string) => {
+    const trip = getTripById(tripId);
+    const expense = trip?.expenses.find((e) => e.id === expenseId);
+    const res = await apiFetch(`/trips/${tripId}/expenses/${expenseId}`, {
+      method: "PATCH",
+      body: { isPrivate: !expense?.isPrivate },
+    });
+    replaceTrip(res.data);
+  };
+
+  const addPhoto = async (tripId: string, photo: Photo) => {
+    const url = await uploadImage(photo.url);
+    const res = await apiFetch(`/trips/${tripId}/photos`, { method: "POST", body: { ...photo, url } });
+    replaceTrip(res.data);
+  };
+  const deletePhoto = async (tripId: string, photoId: string) => {
+    const res = await apiFetch(`/trips/${tripId}/photos/${photoId}`, { method: "DELETE" });
+    replaceTrip(res.data);
+  };
+  const togglePhotoPrivacy = async (tripId: string, photoId: string) => {
+    const trip = getTripById(tripId);
+    const photo = trip?.photos.find((p) => p.id === photoId);
+    const res = await apiFetch(`/trips/${tripId}/photos/${photoId}`, {
+      method: "PATCH",
+      body: { isPrivate: !photo?.isPrivate },
+    });
+    replaceTrip(res.data);
+  };
+
+  const addNote = async (tripId: string, note: Note) => {
+    const res = await apiFetch(`/trips/${tripId}/notes`, { method: "POST", body: note });
+    replaceTrip(res.data);
+  };
+  const updateNote = async (tripId: string, noteId: string, data: Partial<Note>) => {
+    const res = await apiFetch(`/trips/${tripId}/notes/${noteId}`, { method: "PATCH", body: data });
+    replaceTrip(res.data);
+  };
+  const deleteNote = async (tripId: string, noteId: string) => {
+    const res = await apiFetch(`/trips/${tripId}/notes/${noteId}`, { method: "DELETE" });
+    replaceTrip(res.data);
+  };
+  const toggleNotePrivacy = async (tripId: string, noteId: string) => {
+    const trip = getTripById(tripId);
+    const note = trip?.notes.find((n) => n.id === noteId);
+    const res = await apiFetch(`/trips/${tripId}/notes/${noteId}`, {
+      method: "PATCH",
+      body: { isPrivate: !note?.isPrivate },
+    });
+    replaceTrip(res.data);
+  };
 
   const updateTripVisibility = async (tripId: string, visibility: "public" | "private") =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, visibility } : t));
+    updateTrip(tripId, { visibility });
   const updateTripPrivacy = async (tripId: string, settings: Partial<PrivacySettings>) =>
-    persist(trips.map((t) => t.id === tripId ? { ...t, privacySettings: { ...t.privacySettings, ...settings } } : t));
+    updateTrip(tripId, { privacySettings: settings } as Partial<Trip>);
 
   return (
     <TripContext.Provider value={{
-      trips, getTripById, addTrip, updateTrip, deleteTrip,
+      trips, isLoading, getTripById, addTrip, updateTrip, deleteTrip,
       addExpense, deleteExpense, toggleExpensePrivacy, addPhoto, deletePhoto, togglePhotoPrivacy,
       addNote, updateNote, deleteNote, toggleNotePrivacy,
       updateTripVisibility, updateTripPrivacy,

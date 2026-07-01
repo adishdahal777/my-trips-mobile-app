@@ -1,18 +1,22 @@
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import { router, useLocalSearchParams } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { launchImageLibrary } from "react-native-image-picker";
+import { router } from "../../../../utils/navigation";
+import { useRoute } from "@react-navigation/native";
 import { useState } from "react";
-import { Dimensions, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
+import { Alert, Dimensions, Image, ImageBackground, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { PieChart } from "react-native-svg-charts";
 import { BottomSheet } from "../../../../components/BottomSheet";
 import { ExpenseItem } from "../../../../components/ExpenseItem";
 import { GradientButton } from "../../../../components/GradientButton";
 import { NoteCard } from "../../../../components/NoteCard";
+import { OsmMapView } from "../../../../components/OsmMapView";
 import { useTheme } from "../../../../context/ThemeContext";
 import { useTrips } from "../../../../context/TripContext";
 import { calculateRouteTime, calculateTotalDistance } from "../../../../utils/calculateRoute";
 import { categorize } from "../../../../utils/categorize";
+import { analyzeBudget } from "../../../../utils/budgetInsight";
+import { optimizeRoute } from "../../../../utils/optimizeRoute";
+import { suggestMood } from "../../../../utils/moodSuggest";
 import { formatCurrency } from "../../../../utils/formatCurrency";
 import { ShareSheet } from "../../../../components/ShareSheet";
 
@@ -21,8 +25,9 @@ const TABS = ["Overview", "Route", "Expenses", "Photos", "Notes"];
 
 export default function TripDetail() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { getTripById, addExpense, addPhoto, addNote, updateNote, deleteNote, updateTripVisibility, updateTripPrivacy, togglePhotoPrivacy, toggleExpensePrivacy } = useTrips();
+  const route = useRoute<any>();
+  const id = route.params?.id as string;
+  const { getTripById, addExpense, addPhoto, addNote, updateNote, deleteNote, updateTrip, updateTripVisibility, updateTripPrivacy, togglePhotoPrivacy, toggleExpensePrivacy } = useTrips();
   const trip = getTripById(id!);
   const [tab, setTab] = useState(0);
 
@@ -34,8 +39,9 @@ export default function TripDetail() {
   const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
 
   const [noteModal, setNoteModal] = useState(false); const [editNote, setEditNote] = useState<any>(null);
-  const [noteTitle, setNoteTitle] = useState(""); const [noteBody, setNoteBody] = useState(""); const [noteMood, setNoteMood] = useState("😊"); const [noteColor, setNoteColor] = useState("#FFF3E0"); const [notePrivate, setNotePrivate] = useState(false);
+  const [noteTitle, setNoteTitle] = useState(""); const [noteBody, setNoteBody] = useState(""); const [noteMood, setNoteMood] = useState("😊"); const [noteColor, setNoteColor] = useState("#FFF3E0"); const [notePrivate, setNotePrivate] = useState(false); const [moodTouched, setMoodTouched] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
 
   if (!trip) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={{ color: colors.text }}>Trip not found</Text></View>;
 
@@ -45,33 +51,62 @@ export default function TripDetail() {
   const catTotals = trip.expenses.reduce((a, e) => { a[e.category] = (a[e.category] || 0) + e.amount; return a; }, {} as Record<string, number>);
   const pieColors = [colors.accent, "#60A5FA", "#93C5FD", "#BFDBFE", "#DBEAFE"];
   const pieData = Object.entries(catTotals).map(([key, val], i) => ({ key, value: val, svg: { fill: pieColors[i % 5] }, arc: { cornerRadius: 4 } }));
+  const insight = analyzeBudget(trip);
+
+  const optimize = async () => {
+    if (trip.route.length < 3 || optimizing) return;
+    const optimized = optimizeRoute(trip.route);
+    const before = calculateTotalDistance(trip.route);
+    const after = calculateTotalDistance(optimized);
+    setOptimizing(true);
+    try {
+      await updateTrip(id!, { route: optimized });
+      Alert.alert("Route optimized", `Distance: ${Math.round(before)} km → ${Math.round(after)} km`);
+    } catch (e: any) {
+      Alert.alert("Couldn't optimize route", e?.message ?? "Please try again.");
+    }
+    setOptimizing(false);
+  };
 
   const saveExpense = async () => {
     if (!expAmt || !expDesc) return;
     const cat = aiPred?.category !== "Other" ? aiPred! : categorize(expDesc);
-    await addExpense(id!, { id: "e" + Date.now(), description: expDesc, amount: parseFloat(expAmt), currency: trip.currency, date: new Date().toISOString().split("T")[0], category: cat.category, icon: cat.icon, aiSuggested: !!aiPred && aiPred.category !== "Other" });
-    setExpAmt(""); setExpDesc(""); setExpSheet(false);
+    try {
+      await addExpense(id!, { id: "e" + Date.now(), description: expDesc, amount: parseFloat(expAmt), currency: trip.currency, date: new Date().toISOString().split("T")[0], category: cat.category, icon: cat.icon, aiSuggested: !!aiPred && aiPred.category !== "Other" });
+      setExpAmt(""); setExpDesc(""); setExpSheet(false);
+    } catch (e: any) {
+      Alert.alert("Couldn't add expense", e?.message ?? "Please try again.");
+    }
   };
 
-  const pickPhoto = async () => {
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
-    if (!r.canceled) { setTempUri(r.assets[0].uri); setPhotoModal(true); }
+  const pickPhoto = () => {
+    launchImageLibrary({ mediaType: "photo", quality: 0.8 }, (r) => {
+      if (!r.didCancel && r.assets?.[0]?.uri) { setTempUri(r.assets[0].uri); setPhotoModal(true); }
+    });
   };
   const savePhoto = async () => {
     if (!tempUri) return;
-    await addPhoto(id!, { id: "p" + Date.now(), url: tempUri, caption: caption || "Trip memory", lat: trip.route[0]?.lat || 0, lng: trip.route[0]?.lng || 0, date: new Date().toISOString().split("T")[0], isPrivate: photoPrivate });
-    setTempUri(null); setCaption(""); setPhotoPrivate(false); setPhotoModal(false);
+    try {
+      await addPhoto(id!, { id: "p" + Date.now(), url: tempUri, caption: caption || "Trip memory", lat: trip.route[0]?.lat || 0, lng: trip.route[0]?.lng || 0, date: new Date().toISOString().split("T")[0], isPrivate: photoPrivate });
+      setTempUri(null); setCaption(""); setPhotoPrivate(false); setPhotoModal(false);
+    } catch (e: any) {
+      Alert.alert("Couldn't upload photo", e?.message ?? "Please try again.");
+    }
   };
 
   const openNoteEditor = (note?: any) => {
-    if (note) { setEditNote(note); setNoteTitle(note.title); setNoteBody(note.body); setNoteMood(note.mood); setNoteColor(note.color); setNotePrivate(!!note.isPrivate); }
-    else { setEditNote(null); setNoteTitle(""); setNoteBody(""); setNoteMood("😊"); setNoteColor("#FFF3E0"); setNotePrivate(false); }
+    if (note) { setEditNote(note); setNoteTitle(note.title); setNoteBody(note.body); setNoteMood(note.mood); setNoteColor(note.color); setNotePrivate(!!note.isPrivate); setMoodTouched(true); }
+    else { setEditNote(null); setNoteTitle(""); setNoteBody(""); setNoteMood("😊"); setNoteColor("#FFF3E0"); setNotePrivate(false); setMoodTouched(false); }
     setNoteModal(true);
   };
   const saveNote = async () => {
-    if (editNote) await updateNote(id!, editNote.id, { title: noteTitle, body: noteBody, mood: noteMood, color: noteColor, isPrivate: notePrivate });
-    else await addNote(id!, { id: "n" + Date.now(), title: noteTitle || "Untitled", body: noteBody, mood: noteMood, date: new Date().toISOString().split("T")[0], color: noteColor, isPrivate: notePrivate });
-    setNoteModal(false);
+    try {
+      if (editNote) await updateNote(id!, editNote.id, { title: noteTitle, body: noteBody, mood: noteMood, color: noteColor, isPrivate: notePrivate });
+      else await addNote(id!, { id: "n" + Date.now(), title: noteTitle || "Untitled", body: noteBody, mood: noteMood, date: new Date().toISOString().split("T")[0], color: noteColor, isPrivate: notePrivate });
+      setNoteModal(false);
+    } catch (e: any) {
+      Alert.alert("Couldn't save note", e?.message ?? "Please try again.");
+    }
   };
 
   const handleShare = () => {
@@ -206,14 +241,22 @@ export default function TripDetail() {
           <View>
             <View style={[styles.mapWrap, { borderColor: colors.border }]}>
               {trip.route.length > 0 ? (
-                <MapView style={styles.flex1} initialRegion={{ latitude: trip.route[0].lat, longitude: trip.route[0].lng, latitudeDelta: 2, longitudeDelta: 2 }}>
-                  <UrlTile urlTemplate="https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png" maximumZ={19} flipY={false} />
-                  <Polyline coordinates={trip.route.map((s) => ({ latitude: s.lat, longitude: s.lng }))} strokeColor={colors.accent} strokeWidth={4} />
-                  {trip.route.map((s) => <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }}><View style={[styles.mapMarker, { backgroundColor: stopColor(s.color) }]}><Text style={styles.mapMarkerText}>{s.label}</Text></View></Marker>)}
-                </MapView>
+                <OsmMapView
+                  style={styles.flex1}
+                  strokeColor={colors.accent}
+                  stops={trip.route.map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, color: s.color, label: s.label }))}
+                />
               ) : <View style={[styles.center, { backgroundColor: colors.surface }]}><Text style={{ color: colors.textMuted }}>No route data</Text></View>}
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Detailed Path</Text>
+            <View style={styles.pathHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>Detailed Path</Text>
+              {trip.route.length >= 3 && (
+                <Pressable onPress={optimize} disabled={optimizing} style={[styles.optimizeBtn, { backgroundColor: colors.accentLight, opacity: optimizing ? 0.5 : 1 }]}>
+                  <Ionicons name="sparkles-outline" size={13} color={colors.accent} />
+                  <Text style={[styles.optimizeBtnText, { color: colors.accent }]}>{optimizing ? "Optimizing…" : "Optimize"}</Text>
+                </Pressable>
+              )}
+            </View>
             <View style={[styles.routeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {trip.route.map((s, i) => (
                 <View key={s.id} style={styles.pathRow}>
@@ -232,6 +275,23 @@ export default function TripDetail() {
               <Text style={styles.totalSpentValue}>{formatCurrency(trip.spent, trip.currency)}</Text>
               <View style={styles.totalSpentRemaining}><Text style={styles.totalSpentRemainingText}>REMAINING: {formatCurrency(Math.max(0, trip.budget - trip.spent), trip.currency)}</Text></View>
             </View>
+            {trip.spent > 0 && (
+              <View style={[styles.insightCard, { backgroundColor: colors.card, borderColor: insight.overBudget ? colors.danger : colors.border }]}>
+                <View style={styles.insightHeader}>
+                  <Ionicons name={insight.overBudget ? "warning-outline" : "trending-up-outline"} size={16} color={insight.overBudget ? colors.danger : colors.success} />
+                  <Text style={[styles.insightTitle, { color: colors.text }]}>Spending Insight</Text>
+                </View>
+                <Text style={[styles.insightSummary, { color: colors.textSecondary }]}>{insight.summary}</Text>
+                <View style={styles.insightMetrics}>
+                  <View style={styles.insightMetric}><Text style={[styles.insightMetricVal, { color: colors.text }]}>{formatCurrency(Math.round(insight.dailyBurn), trip.currency)}</Text><Text style={[styles.insightMetricLabel, { color: colors.textMuted }]}>Per Day</Text></View>
+                  <View style={styles.insightMetric}><Text style={[styles.insightMetricVal, { color: colors.text }]}>{formatCurrency(insight.projectedTotal, trip.currency)}</Text><Text style={[styles.insightMetricLabel, { color: colors.textMuted }]}>Projected</Text></View>
+                  {insight.topCategory && <View style={styles.insightMetric}><Text style={[styles.insightMetricVal, { color: colors.text }]}>{insight.topCategory}</Text><Text style={[styles.insightMetricLabel, { color: colors.textMuted }]}>{Math.round(insight.topCategoryPct * 100)}% Top</Text></View>}
+                </View>
+                {insight.anomalies.length > 0 && (
+                  <Text style={[styles.insightAnomaly, { color: colors.danger }]}>⚡ {insight.anomalies.length} unusually large {insight.anomalies.length === 1 ? "expense" : "expenses"} flagged</Text>
+                )}
+              </View>
+            )}
             {pieData.length > 0 && (
               <View style={[styles.pieCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.pieRow}>
@@ -394,14 +454,14 @@ export default function TripDetail() {
           </View>
           <ScrollView style={styles.noteBody}>
             <TextInput value={noteTitle} onChangeText={setNoteTitle} placeholder="Trip Note Title" placeholderTextColor="rgba(15,23,42,0.3)" style={styles.noteTitleInput} multiline />
-            <TextInput value={noteBody} onChangeText={setNoteBody} placeholder="What's on your mind?..." placeholderTextColor="rgba(15,23,42,0.3)" style={styles.noteBodyInput} multiline autoFocus={!editNote} />
+            <TextInput value={noteBody} onChangeText={(t) => { setNoteBody(t); if (!moodTouched) setNoteMood(suggestMood(t)); }} placeholder="What's on your mind?..." placeholderTextColor="rgba(15,23,42,0.3)" style={styles.noteBodyInput} multiline autoFocus={!editNote} />
           </ScrollView>
           <View style={styles.noteToolbar}>
             <View style={styles.noteColors}>
               {["#FFF3E0", "#E8F5E9", "#E3F2FD", "#FCE4EC", "#F3E5F5"].map((c) => <Pressable key={c} onPress={() => setNoteColor(c)} style={[styles.noteColorDot, { backgroundColor: c, borderColor: noteColor === c ? "#0F172A" : "transparent" }]} />)}
             </View>
             <View style={styles.noteMoods}>
-              {["😊", "😍", "🤩", "❤️"].map((m) => <Pressable key={m} onPress={() => setNoteMood(m)} style={[styles.noteMoodBtn, noteMood === m && styles.noteMoodActive]}><Text style={styles.noteMoodText}>{m}</Text></Pressable>)}
+              {["😊", "😍", "🤩", "❤️"].map((m) => <Pressable key={m} onPress={() => { setNoteMood(m); setMoodTouched(true); }} style={[styles.noteMoodBtn, noteMood === m && styles.noteMoodActive]}><Text style={styles.noteMoodText}>{m}</Text></Pressable>)}
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -451,8 +511,18 @@ const styles = StyleSheet.create({
   routeName: { fontSize: 13, fontFamily: "Inter-Bold" },
   routeSub: { fontSize: 10, fontFamily: "Inter-Medium" },
   mapWrap: { height: 260, borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 16 },
-  mapMarker: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: "#FFF" },
-  mapMarkerText: { color: "#FFF", fontSize: 10, fontFamily: "Inter-Bold" },
+  pathHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  optimizeBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14 },
+  optimizeBtnText: { fontSize: 12, fontFamily: "Inter-Bold" },
+  insightCard: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 20 },
+  insightHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  insightTitle: { fontSize: 14, fontFamily: "Inter-Bold" },
+  insightSummary: { fontSize: 12, fontFamily: "Inter-Medium", lineHeight: 18, marginBottom: 12 },
+  insightMetrics: { flexDirection: "row", justifyContent: "space-between" },
+  insightMetric: { flex: 1 },
+  insightMetricVal: { fontSize: 14, fontFamily: "Inter-Bold" },
+  insightMetricLabel: { fontSize: 9, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 1 },
+  insightAnomaly: { fontSize: 11, fontFamily: "Inter-Bold", marginTop: 12 },
   pathRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   pathIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 },
   pathLabel: { fontSize: 11, fontFamily: "Inter-Bold" },

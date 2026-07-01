@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
 import React, { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../context/ThemeContext";
@@ -32,7 +32,7 @@ export function HomeHeader({ user, onSearchPress, notifCount = 0 }: HomeHeaderPr
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topRow}>
-        <Pressable onPress={() => router.push("/(tabs)/profile")} style={styles.avatarRow}>
+        <Pressable onPress={() => router.push("Profile")} style={styles.avatarRow}>
           <Image source={{ uri: user.avatar }} style={[styles.avatar, { borderColor: colors.border }]} />
           <View style={styles.greetingWrap}>
             <Text style={[styles.greetingLabel, { color: colors.textMuted }]}>{greeting}</Text>

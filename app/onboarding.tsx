@@ -1,5 +1,5 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import LinearGradient from "react-native-linear-gradient";
+import { router } from "../utils/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -247,10 +247,10 @@ export default function Onboarding() {
 
       {/* Footer CTA */}
       <Animated.View style={[styles.footer, { opacity: footerFade }]}>
-        <GradientButton title="Begin Your Journey" onPress={() => router.push("/(auth)/register")} />
+        <GradientButton title="Begin Your Journey" onPress={() => router.push("Auth", { screen: "Register" })} />
 
         <Pressable
-          onPress={() => router.push("/(auth)/login")}
+          onPress={() => router.push("Auth", { screen: "Login" })}
           style={styles.signInBtn}
         >
           <Text style={styles.signInText}>

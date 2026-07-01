@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Trip } from "../data/mockData";
@@ -46,9 +46,9 @@ export function FeedTripCard({ trip, isGuest }: Props) {
 
   const handlePress = () => {
     if (isGuest) {
-      router.push(`/public-trip?id=${trip.id}` as any);
+      router.push("PublicTrip", { id: trip.id });
     } else {
-      router.push(`/(tabs)/trips/${trip.id}` as any);
+      router.push("TripDetail", { id: trip.id });
     }
   };
 

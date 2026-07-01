@@ -1,4 +1,4 @@
-import { LinearGradient } from "expo-linear-gradient";
+import LinearGradient from "react-native-linear-gradient";
 import { Pressable, StyleSheet, Text, ViewStyle } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 

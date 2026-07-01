@@ -1,26 +1,44 @@
-import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../../components/FeedTripCard";
+import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useTrips } from "../../context/TripContext";
-import { MOCK_PUBLIC_TRIPS } from "../../data/mockData";
+import type { Trip } from "../../data/mockData";
+import { apiFetch } from "../../services/api";
 
 const FEED_FILTERS = ["All", "Ongoing", "Completed", "Popular"];
 
 export default function Explore() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const { trips: myTrips } = useTrips();
   const [filter, setFilter] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
+  const [feedTrips, setFeedTrips] = useState<Trip[]>([]);
 
-  // Merge my public trips + other public trips
+  const loadFeed = useCallback(async () => {
+    try {
+      const res = await apiFetch("/feed");
+      setFeedTrips(res.data);
+    } catch {
+      setFeedTrips([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  // Merge my public trips + other travelers' public trips
   const allPublicTrips = useMemo(() => {
     const myPublic = myTrips.filter((t) => t.visibility === "public");
-    const merged = [...myPublic, ...MOCK_PUBLIC_TRIPS];
+    const others = feedTrips.filter((t) => t.user?.id !== user?.id);
+    const merged = [...myPublic, ...others];
     return merged.sort((a, b) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime());
-  }, [myTrips]);
+  }, [myTrips, feedTrips, user]);
 
   const filteredTrips = useMemo(() => {
     switch (filter) {
@@ -35,9 +53,10 @@ export default function Explore() {
     return [...allPublicTrips].sort((a, b) => (b.likes || 0) - (a.likes || 0))[0];
   }, [allPublicTrips]);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    await loadFeed();
+    setRefreshing(false);
   };
 
   return (
@@ -135,7 +154,7 @@ export default function Explore() {
         {/* Feed */}
         <View style={styles.feed}>
           {filteredTrips.map((trip) => (
-            <FeedTripCard key={trip.id} trip={trip} isGuest={false} />
+            <FeedTripCard key={trip.id} trip={trip} isGuest={trip.user?.id !== user?.id} />
           ))}
           {filteredTrips.length === 0 && (
             <View style={styles.emptyFeed}>

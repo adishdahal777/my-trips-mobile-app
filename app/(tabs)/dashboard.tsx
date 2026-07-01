@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../../utils/navigation";
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,40 +9,43 @@ import { FloatingActionButton } from "../../components/FloatingActionButton";
 import { HomeHeader } from "../../components/HomeHeader";
 import { StatsBanner } from "../../components/StatsBanner";
 import { TripSmallCard } from "../../components/TripSmallCard";
+import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
-import { MOCK_TRIPS, MOCK_USER } from "../../data/mockData";
+import { useTrips } from "../../context/TripContext";
 import { calculateUserStats } from "../../utils/calculateStats";
 
 export default function Dashboard() {
   const { colors } = useTheme();
+  const { user } = useAuth();
+  const { trips } = useTrips();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const stats = useMemo(() => calculateUserStats(MOCK_TRIPS), []);
+  const stats = useMemo(() => calculateUserStats(trips), [trips]);
 
   const featuredTrip = useMemo(() => {
     return (
-      MOCK_TRIPS.find((t) => t.status === "ongoing") ||
-      MOCK_TRIPS.find((t) => t.status === "upcoming") ||
-      MOCK_TRIPS[0]
+      trips.find((t) => t.status === "ongoing") ||
+      trips.find((t) => t.status === "upcoming") ||
+      trips[0]
     );
-  }, []);
+  }, [trips]);
 
   const recentExpenses = useMemo(() => {
-    const all = MOCK_TRIPS.flatMap((t) => t.expenses.map((e) => ({ ...e, tripName: t.name })));
+    const all = trips.flatMap((t) => t.expenses.map((e) => ({ ...e, tripName: t.name })));
     return all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-  }, []);
+  }, [trips]);
 
   const handleQuickAction = (type: string) => {
     switch (type) {
       case "trip":
-        router.push("/(tabs)/trips/create");
+        router.push("CreateTrip");
         break;
       case "expense":
-        if (featuredTrip) router.push(`/(tabs)/trips/${featuredTrip.id}`);
+        if (featuredTrip) router.push("TripDetail", { id: featuredTrip.id });
         break;
       case "photo":
-        if (featuredTrip) router.push(`/(tabs)/trips/${featuredTrip.id}`);
+        if (featuredTrip) router.push("TripDetail", { id: featuredTrip.id });
         break;
       default:
         break;
@@ -58,7 +61,7 @@ export default function Dashboard() {
       >
         {/* Zone 1: Header */}
         {!isSearching ? (
-          <HomeHeader user={MOCK_USER} onSearchPress={() => setIsSearching(true)} notifCount={1} />
+          <HomeHeader user={user!} onSearchPress={() => setIsSearching(true)} notifCount={1} />
         ) : (
           <View style={[styles.searchBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
             <Pressable onPress={() => setIsSearching(false)} style={styles.searchClose}>
@@ -87,20 +90,22 @@ export default function Dashboard() {
             currentMonthSpent={stats.currentMonthSpent}
             totalKm={stats.totalKm}
             countryFlags={stats.countryList.map(() => "🌍")}
-            onTripsPress={() => router.push("/(tabs)/trips")}
+            onTripsPress={() => router.push("Trips")}
           />
         </View>
 
         {/* Zone 3: Featured Trip */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Adventure</Text>
-            <Pressable onPress={() => router.push(`/(tabs)/trips/${featuredTrip.id}`)}>
-              <Text style={[styles.sectionLink, { color: colors.accent }]}>Details →</Text>
-            </Pressable>
+        {featuredTrip && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Adventure</Text>
+              <Pressable onPress={() => router.push("TripDetail", { id: featuredTrip.id })}>
+                <Text style={[styles.sectionLink, { color: colors.accent }]}>Details →</Text>
+              </Pressable>
+            </View>
+            <FeaturedTripCard trip={featuredTrip} />
           </View>
-          <FeaturedTripCard trip={featuredTrip} />
-        </View>
+        )}
 
         {/* Zone 4: Trips Scroll */}
         <View style={styles.section}>
@@ -108,7 +113,7 @@ export default function Dashboard() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>My Journeys</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tripsScrollContent}>
-            {MOCK_TRIPS.map((trip) => (
+            {trips.map((trip) => (
               <TripSmallCard key={trip.id} trip={trip} />
             ))}
             <TripSmallCard isAddButton />

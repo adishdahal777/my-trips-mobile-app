@@ -1,24 +1,41 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { router } from "../utils/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../components/FeedTripCard";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { MOCK_PUBLIC_TRIPS } from "../data/mockData";
+import type { Trip } from "../data/mockData";
+import { apiFetch } from "../services/api";
 
 const FEED_FILTERS = ["All", "Ongoing", "Completed", "Popular"];
 
 export default function PublicFeed() {
   const { colors } = useTheme();
+  const { isAuthenticated } = useAuth();
   const [filter, setFilter] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
+  const [feedTrips, setFeedTrips] = useState<Trip[]>([]);
+
+  const loadFeed = useCallback(async () => {
+    try {
+      const res = await apiFetch("/feed");
+      setFeedTrips(res.data);
+    } catch {
+      setFeedTrips([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
   const allPublicTrips = useMemo(() => {
-    return [...MOCK_PUBLIC_TRIPS].sort(
+    return [...feedTrips].sort(
       (a, b) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime()
     );
-  }, []);
+  }, [feedTrips]);
 
   const filteredTrips = useMemo(() => {
     switch (filter) {
@@ -33,9 +50,10 @@ export default function PublicFeed() {
     return [...allPublicTrips].sort((a, b) => (b.likes || 0) - (a.likes || 0))[0];
   }, [allPublicTrips]);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    await loadFeed();
+    setRefreshing(false);
   };
 
   return (
@@ -58,18 +76,20 @@ export default function PublicFeed() {
         </View>
 
         {/* Sign Up Banner */}
-        <View style={[styles.signUpBanner, { backgroundColor: colors.accent }]}>
-          <View style={styles.bannerContent}>
-            <Ionicons name="sparkles" size={20} color="#FFF" />
-            <View style={styles.bannerText}>
-              <Text style={styles.bannerTitle}>Join the community!</Text>
-              <Text style={styles.bannerSub}>Like, comment, and share your own trips</Text>
+        {!isAuthenticated && (
+          <View style={[styles.signUpBanner, { backgroundColor: colors.accent }]}>
+            <View style={styles.bannerContent}>
+              <Ionicons name="sparkles" size={20} color="#FFF" />
+              <View style={styles.bannerText}>
+                <Text style={styles.bannerTitle}>Join the community!</Text>
+                <Text style={styles.bannerSub}>Like, comment, and share your own trips</Text>
+              </View>
             </View>
+            <Pressable onPress={() => router.push("Auth", { screen: "Register" })} style={styles.bannerBtn}>
+              <Text style={[styles.bannerBtnText, { color: colors.accent }]}>Sign Up</Text>
+            </Pressable>
           </View>
-          <Pressable onPress={() => router.push("/(auth)/register")} style={styles.bannerBtn}>
-            <Text style={[styles.bannerBtnText, { color: colors.accent }]}>Sign Up</Text>
-          </Pressable>
-        </View>
+        )}
 
         {/* Featured Hero */}
         {featuredTrip && (
