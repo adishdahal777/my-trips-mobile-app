@@ -1,12 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEV_LAN_IP } from "@env";
 
 // Dev backend runs on the same machine, port 8000. Which host reaches it depends on
 // how the device connects — try each candidate and cache whichever actually answers,
 // instead of guessing from unreliable device/emulator detection.
-//   - LAN IP: works for a physical device on the same Wi-Fi (and usually the emulator too)
+//   - LAN IP (from .env, gitignored): works for a physical device on the same Wi-Fi
+//     (and usually the emulator too) — set DEV_LAN_IP in .env, see .env.example
 //   - 10.0.2.2: Android emulator's alias for the host machine
 //   - localhost: iOS simulator, or a USB device with `adb reverse tcp:8000 tcp:8000`
-const DEV_LAN_IP = "192.168.1.58";
 const CANDIDATE_HOSTS = [DEV_LAN_IP, "10.0.2.2", "localhost"];
 const PORT = 8000;
 
