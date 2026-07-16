@@ -1,14 +1,12 @@
+import { getCategoryIcon } from "./categoryIcon";
+
 export function categorize(description: string): { category: string; icon: string } {
   const d = description.toLowerCase();
-  if (/lunch|dinner|breakfast|cafe|coffee|food|pizza|meal|snack|restaurant|warung/.test(d))
-    return { category: "Food", icon: "🍕" };
-  if (/taxi|uber|bus|train|flight|ferry|fuel|metro|toll|parking|grab/.test(d))
-    return { category: "Transport", icon: "🚗" };
-  if (/hotel|hostel|airbnb|motel|resort|room|lodge|stay|villa/.test(d))
-    return { category: "Accommodation", icon: "🏨" };
-  if (/ticket|tour|museum|park|show|concert|activity|ride|entry|temple/.test(d))
-    return { category: "Activities", icon: "🎭" };
-  if (/shop|mall|clothes|souvenir|store|market|buy|batik/.test(d))
-    return { category: "Shopping", icon: "🛍️" };
-  return { category: "Other", icon: "📦" };
+  let category = "Other";
+  if (/lunch|dinner|breakfast|cafe|coffee|food|pizza|meal|snack|restaurant|warung/.test(d)) category = "Food";
+  else if (/taxi|uber|bus|train|flight|ferry|fuel|metro|toll|parking|grab/.test(d)) category = "Transport";
+  else if (/hotel|hostel|airbnb|motel|resort|room|lodge|stay|villa/.test(d)) category = "Accommodation";
+  else if (/ticket|tour|museum|park|show|concert|activity|ride|entry|temple/.test(d)) category = "Activities";
+  else if (/shop|mall|clothes|souvenir|store|market|buy|batik/.test(d)) category = "Shopping";
+  return { category, icon: getCategoryIcon(category) };
 }

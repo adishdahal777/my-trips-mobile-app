@@ -1,20 +1,48 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { launchImageLibrary } from "react-native-image-picker";
 import React from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "../../utils/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useTrips } from "../../context/TripContext";
 import { calculateUserStats } from "../../utils/calculateStats";
+import { apiFetch, uploadAvatar } from "../../services/api";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
   const { trips } = useTrips();
   const stats = React.useMemo(() => calculateUserStats(trips), [trips]);
   const [notifs, setNotifs] = React.useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
+  const [followCounts, setFollowCounts] = React.useState({ followers: 0, following: 0 });
+
+  React.useEffect(() => {
+    if (!user) return;
+    apiFetch(`/users/${user.id}`)
+      .then((res) => setFollowCounts({ followers: res.data?.followersCount ?? 0, following: res.data?.followingCount ?? 0 }))
+      .catch(() => {});
+  }, [user?.id]);
 
   if (!user) return null;
+
+  const pickAvatar = () => {
+    launchImageLibrary({ mediaType: "photo", quality: 0.8 }, async (r) => {
+      if (r.didCancel || !r.assets?.[0]?.uri) return;
+      setUploadingAvatar(true);
+      try {
+        const url = await uploadAvatar(r.assets[0].uri);
+        console.log("[profile] avatar uploaded ->", url);
+        await updateUser({ avatar: url });
+      } catch (e: any) {
+        Alert.alert("Couldn't update photo", e?.message ?? "Please try again.");
+      } finally {
+        setUploadingAvatar(false);
+      }
+    });
+  };
 
   const Row = ({ icon, label, right, onPress, isLast }: any) => (
     <Pressable
@@ -45,12 +73,13 @@ export default function Profile() {
         <View style={[styles.profileHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.avatarWrap}>
             <Image source={{ uri: user.avatar }} style={[styles.avatar, { borderColor: colors.surface }]} />
-            <Pressable style={[styles.editBtn, { backgroundColor: colors.accent }]}>
-              <Ionicons name="pencil" size={12} color="white" />
+            <Pressable onPress={pickAvatar} disabled={uploadingAvatar} style={[styles.editBtn, { backgroundColor: colors.accent }]}>
+              <Ionicons name={uploadingAvatar ? "hourglass-outline" : "pencil"} size={12} color="white" />
             </Pressable>
           </View>
           <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
           <Text style={[styles.userEmail, { color: colors.textMuted }]}>{user.email}</Text>
+          {!!user.bio && <Text style={[styles.userBio, { color: colors.textSecondary }]}>{user.bio}</Text>}
 
           <View style={styles.statsRow}>
             {[
@@ -64,11 +93,22 @@ export default function Profile() {
               </View>
             ))}
           </View>
+
+          <View style={styles.followRow}>
+            <Pressable onPress={() => router.push("FollowList", { userId: user.id, mode: "followers" })} style={styles.followItem}>
+              <Text style={[styles.followValue, { color: colors.text }]}>{followCounts.followers}</Text>
+              <Text style={[styles.followLabel, { color: colors.textMuted }]}>Followers</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push("FollowList", { userId: user.id, mode: "following" })} style={styles.followItem}>
+              <Text style={[styles.followValue, { color: colors.text }]}>{followCounts.following}</Text>
+              <Text style={[styles.followLabel, { color: colors.textMuted }]}>Following</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.settingsArea}>
           <Section title="Account Settings">
-            <Row icon="person-outline" label="Personal Information" />
+            <Row icon="person-outline" label="Personal Information" onPress={() => router.push("ProfileEdit")} />
             <Row
               icon="notifications-outline"
               label="Push Notifications"
@@ -107,6 +147,7 @@ export default function Profile() {
           </Section>
 
           <Section title="Help & Support">
+            <Row icon="star-outline" label="Rate MyTrips" onPress={() => router.push("RateApp")} />
             <Row icon="help-circle-outline" label="Help Center" />
             <Row icon="chatbubble-outline" label="Contact Us" />
             <Row icon="document-text-outline" label="Terms of Service" isLast />
@@ -154,36 +195,41 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "white",
   },
-  userName: { fontSize: 22, fontFamily: "Inter-Bold", marginBottom: 2 },
-  userEmail: { fontSize: 13, fontFamily: "Inter-Medium", marginBottom: 20 },
-  statsRow: { flexDirection: "row", width: "100%" },
+  userName: { fontSize: 22, fontWeight: "700", marginBottom: 2 },
+  userEmail: { fontSize: 13, marginBottom: 4 },
+  userBio: { fontSize: 13, textAlign: "center", marginBottom: 16, paddingHorizontal: 12 },
+  followRow: { flexDirection: "row", marginTop: 16, gap: 24 },
+  followItem: { alignItems: "center" },
+  followValue: { fontSize: 16, fontWeight: "700" },
+  followLabel: { fontSize: 11, marginTop: 1 },
+  statsRow: { flexDirection: "row", width: "100%", marginTop: 16 },
   statItem: { flex: 1, alignItems: "center", paddingVertical: 4 },
-  statValue: { fontSize: 20, fontFamily: "Inter-Bold" },
-  statLabel: { fontSize: 10, fontFamily: "Inter-Medium", textTransform: "uppercase", letterSpacing: 1, marginTop: 2 },
-  settingsArea: { paddingHorizontal: 20, paddingBottom: 100 },
+  statValue: { fontSize: 20, fontWeight: "700" },
+  statLabel: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, marginTop: 2 },
+  settingsArea: { paddingHorizontal: 20, paddingBottom: 130 },
   sectionWrap: { marginBottom: 20 },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: "Inter-Bold",
+    fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 1.5,
     marginBottom: 8,
     marginLeft: 4,
   },
-  sectionCard: { borderRadius: 16, paddingHorizontal: 14, borderWidth: 1 },
+  sectionCard: { borderRadius: 8, paddingHorizontal: 14, borderWidth: 1 },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 14 },
-  rowIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", marginRight: 12 },
-  rowLabel: { flex: 1, fontSize: 14, fontFamily: "Inter-Medium" },
-  rowRightText: { fontSize: 13, fontFamily: "Inter-Medium" },
+  rowIcon: { width: 30, height: 30, borderRadius: 6, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  rowLabel: { flex: 1, fontSize: 14 },
+  rowRightText: { fontSize: 13 },
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
     marginTop: 8,
   },
-  logoutText: { fontSize: 14, fontFamily: "Inter-Bold", marginLeft: 8 },
-  version: { textAlign: "center", marginTop: 24, fontSize: 11, fontFamily: "Inter-Medium" },
+  logoutText: { fontSize: 14, fontWeight: "700", marginLeft: 8 },
+  version: { textAlign: "center", marginTop: 24, fontSize: 11 },
 });

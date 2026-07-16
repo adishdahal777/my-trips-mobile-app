@@ -5,6 +5,13 @@ export interface TripUser {
   avatar: string;
 }
 
+export interface Comment {
+  id: string;
+  body: string;
+  user: { id: string; name: string; avatar?: string };
+  createdAt: string;
+}
+
 export const MOCK_USER = {
   id: "u1",
   name: "Alex Rivera",

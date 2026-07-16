@@ -1,6 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SkeletonImage } from "./SkeletonImage";
 import type { Trip } from "../data/mockData";
 import { useTheme } from "../context/ThemeContext";
 import { STATUS_COLORS, STATUS_COLORS_DARK } from "../constants/theme";
@@ -17,7 +18,7 @@ export function TripCard({ trip }: { trip: Trip }) {
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       <View style={styles.row}>
-        <Image source={{ uri: trip.coverPhoto }} style={styles.image} />
+        <SkeletonImage source={{ uri: trip.coverPhoto }} style={styles.image} />
         <View style={styles.info}>
           <View style={styles.titleRow}>
             <View style={styles.titleWrap}>
@@ -45,18 +46,18 @@ export function TripCard({ trip }: { trip: Trip }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, padding: 12, borderWidth: 1, marginBottom: 10 },
+  card: { borderRadius: 8, padding: 12, borderWidth: 1, marginBottom: 10 },
   row: { flexDirection: "row" },
-  image: { width: 80, height: 80, borderRadius: 12, marginRight: 12 },
+  image: { width: 80, height: 80, borderRadius: 6, marginRight: 12 },
   info: { flex: 1, justifyContent: "center" },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   titleWrap: { flex: 1, marginRight: 8 },
-  name: { fontSize: 15, fontFamily: "Inter-Bold", marginBottom: 2 },
-  dest: { fontSize: 11, fontFamily: "Inter-Medium", marginBottom: 6 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusText: { fontSize: 9, fontFamily: "Inter-Bold", textTransform: "uppercase" },
+  name: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  dest: { fontSize: 11, marginBottom: 6 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  statusText: { fontSize: 9, fontWeight: "700", textTransform: "uppercase" },
   bottomRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   dateRow: { flexDirection: "row", alignItems: "center" },
-  dateText: { fontSize: 10, fontFamily: "Inter-Bold", marginLeft: 4 },
-  amount: { fontSize: 14, fontFamily: "Inter-Bold" },
+  dateText: { fontSize: 10, marginLeft: 4 },
+  amount: { fontSize: 14, fontWeight: "700" },
 });

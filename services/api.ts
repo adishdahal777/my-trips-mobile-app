@@ -1,43 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEV_LAN_IP } from "@env";
 
-// Dev backend runs on the same machine, port 8000. Which host reaches it depends on
-// how the device connects — try each candidate and cache whichever actually answers,
-// instead of guessing from unreliable device/emulator detection.
-//   - LAN IP (from .env, gitignored): works for a physical device on the same Wi-Fi
-//     (and usually the emulator too) — set DEV_LAN_IP in .env, see .env.example
-//   - 10.0.2.2: Android emulator's alias for the host machine
-//   - localhost: iOS simulator, or a USB device with `adb reverse tcp:8000 tcp:8000`
-const CANDIDATE_HOSTS = [DEV_LAN_IP, "10.0.2.2", "localhost"];
-const PORT = 8000;
-
-let cachedBaseUrl: string | null = null;
-let resolving: Promise<string> | null = null;
-
-async function resolveApiBaseUrl(): Promise<string> {
-  if (cachedBaseUrl) return cachedBaseUrl;
-  if (resolving) return resolving;
-
-  resolving = (async () => {
-    for (const host of CANDIDATE_HOSTS) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1500);
-      try {
-        await fetch(`http://${host}:${PORT}/api/feed`, { signal: controller.signal });
-        cachedBaseUrl = `http://${host}:${PORT}/api`;
-        return cachedBaseUrl;
-      } catch {
-        // try the next candidate
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-    cachedBaseUrl = `http://${DEV_LAN_IP}:${PORT}/api`;
-    return cachedBaseUrl;
-  })();
-
-  return resolving;
-}
+const API_BASE_URL = "https://mytrips.ratoguras.com/api";
 
 async function getToken(): Promise<string | null> {
   const stored = await AsyncStorage.getItem("mytrips_auth");
@@ -46,7 +9,7 @@ async function getToken(): Promise<string | null> {
 }
 
 export async function apiFetch(path: string, options: { method?: string; body?: any } = {}) {
-  const [baseUrl, token] = await Promise.all([resolveApiBaseUrl(), getToken()]);
+  const token = await getToken();
   const headers: Record<string, string> = { Accept: "application/json" };
   let body: any;
 
@@ -56,7 +19,7 @@ export async function apiFetch(path: string, options: { method?: string; body?: 
   }
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${baseUrl}${path}`, { method: options.method ?? "GET", headers, body });
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: options.method ?? "GET", headers, body });
   const text = await res.text();
   const parsed = text ? JSON.parse(text) : {};
 
@@ -68,14 +31,26 @@ export async function apiFetch(path: string, options: { method?: string; body?: 
   return parsed;
 }
 
+export async function checkApiHealth(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${API_BASE_URL}/feed`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function uploadImage(uri: string): Promise<string> {
   if (uri.startsWith("http")) return uri;
 
-  const [baseUrl, token] = await Promise.all([resolveApiBaseUrl(), getToken()]);
+  const token = await getToken();
   const form = new FormData();
   form.append("image", { uri, name: "upload.jpg", type: "image/jpeg" } as any);
 
-  const res = await fetch(`${baseUrl}/uploads/image`, {
+  const res = await fetch(`${API_BASE_URL}/uploads/image`, {
     method: "POST",
     headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: form,
@@ -85,4 +60,21 @@ export async function uploadImage(uri: string): Promise<string> {
   if (!res.ok) throw new Error(parsed.error ?? "Upload failed");
 
   return parsed.url as string;
+}
+
+export async function uploadAvatar(uri: string): Promise<string> {
+  const token = await getToken();
+  const form = new FormData();
+  form.append("avatar", { uri, name: "avatar.jpg", type: "image/jpeg" } as any);
+
+  const res = await fetch(`${API_BASE_URL}/profile/avatar`, {
+    method: "POST",
+    headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: form,
+  });
+  const parsed = await res.json();
+
+  if (!res.ok) throw new Error(parsed.error ?? "Avatar upload failed");
+
+  return parsed.avatar_url as string;
 }

@@ -124,34 +124,19 @@ export default function Login() {
                     />
                   </View>
                   {error ? <Text style={styles.error}>{error}</Text> : null}
-                  <GradientButton
-                    title={loading ? "Verifying..." : "Verify & Login"}
+                  <Pressable
                     onPress={handleLogin}
                     disabled={loading}
-                    style={styles.actionBtn}
-                  />
+                    style={[styles.simpleBtn, { backgroundColor: colors.accent, opacity: loading ? 0.6 : 1 }]}
+                  >
+                    <Text style={styles.simpleBtnText}>{loading ? "Verifying..." : "Verify & Login"}</Text>
+                  </Pressable>
                   <Pressable onPress={() => setStep("email")} style={styles.changeBtn}>
                     <Text style={[styles.changeBtnText, { color: colors.accent }]}>Change Email</Text>
                   </Pressable>
                 </View>
               )}
 
-              <View style={styles.divider}>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textMuted }]}>or continue with</Text>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              </View>
-
-              <View style={styles.socialRow}>
-                <Pressable style={[styles.socialBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                  <Ionicons name="logo-google" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.socialText, { color: colors.textSecondary }]}>Google</Text>
-                </Pressable>
-                <Pressable style={[styles.socialBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                  <Ionicons name="logo-apple" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.socialText, { color: colors.textSecondary }]}>Apple</Text>
-                </Pressable>
-              </View>
             </Animated.View>
 
             <Pressable onPress={() => router.push("Auth", { screen: "Register" })} style={styles.footerLink}>
@@ -176,29 +161,25 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   logoBadge: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#FF6B6B", alignItems: "center", justifyContent: "center" },
   heroText: { marginBottom: 30 },
-  heroTitle: { color: "#FFF", fontSize: 32, fontFamily: "Inter-Bold" },
-  heroSub: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontFamily: "Inter-Medium" },
+  heroTitle: { color: "#FFF", fontSize: 32 },
+  heroSub: { color: "rgba(255,255,255,0.8)", fontSize: 14 },
   formContainer: { flex: 1, marginTop: -30, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: "hidden" },
   scrollContent: { padding: 30, paddingBottom: 50 },
   cardHeader: { marginBottom: 24 },
-  cardTitle: { fontSize: 24, fontFamily: "Inter-Bold", marginBottom: 4 },
-  cardSub: { fontSize: 13, fontFamily: "Inter-Medium" },
+  cardTitle: { fontSize: 24, marginBottom: 4 },
+  cardSub: { fontSize: 13 },
   inputContainer: { flexDirection: "row", alignItems: "center", borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, marginBottom: 16 },
   inputIcon: { marginRight: 12 },
-  input: { flex: 1, paddingVertical: 16, fontSize: 15, fontFamily: "Inter-Medium" },
-  error: { color: "#FF6B6B", fontSize: 13, fontFamily: "Inter-Medium", marginBottom: 16, textAlign: "center" },
+  input: { flex: 1, paddingVertical: 16, fontSize: 15 },
+  error: { color: "#FF6B6B", fontSize: 13, marginBottom: 16, textAlign: "center" },
   actionBtn: { marginTop: 8 },
+  simpleBtn: { marginTop: 8, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  simpleBtnText: { color: "#FFF", fontSize: 15 },
   otpRow: { borderRadius: 16, paddingVertical: 12, borderWidth: 1, marginBottom: 20, alignItems: "center" },
-  otpInput: { fontSize: 28, fontFamily: "Inter-Bold", letterSpacing: 8, paddingHorizontal: 20 },
+  otpInput: { fontSize: 28, letterSpacing: 8, paddingHorizontal: 20 },
   changeBtn: { marginTop: 16, alignItems: "center" },
-  changeBtnText: { fontSize: 13, fontFamily: "Inter-Bold" },
-  divider: { flexDirection: "row", alignItems: "center", marginVertical: 32 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, fontFamily: "Inter-Medium", marginHorizontal: 16 },
-  socialRow: { flexDirection: "row", gap: 12 },
-  socialBtn: { flex: 1, height: 52, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  socialText: { fontSize: 14, fontFamily: "Inter-Bold" },
+  changeBtnText: { fontSize: 13 },
   footerLink: { marginTop: 32 },
-  footerText: { textAlign: "center", fontSize: 14, fontFamily: "Inter-Medium" },
-  footerLinkBold: { fontFamily: "Inter-Bold" },
+  footerText: { textAlign: "center", fontSize: 14 },
+  footerLinkBold: {},
 });

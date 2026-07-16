@@ -5,8 +5,7 @@ import type { Trip } from "../data/mockData";
 // The custom URL scheme for deep linking
 const APP_SCHEME = "mytripsmobileapp";
 
-// In production, replace with your actual web domain
-const WEB_DOMAIN = "https://mytrips.app";
+const WEB_DOMAIN = "https://mytrips.ratoguras.com";
 
 /**
  * Generate a deep link URL for a trip.

@@ -3,144 +3,150 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useColorScheme } from "react-native";
 
 // ── Color Tokens ──────────────────────────────────
+// Flat, bordered, editorial style (ported from the Lahar app's design system):
+// warm neutral surfaces, hairline borders instead of shadow, muted text hierarchy, tight radii.
 export const lightColors = {
   // Backgrounds
-  background: "#FFFFFF",
-  surface: "#F8FAFC",
-  surfaceAlt: "#F1F5F9",
+  background: "#F6F5F2",
+  surface: "#FFFFFF",
+  surfaceAlt: "#FAFAF7",
   card: "#FFFFFF",
 
   // Text
-  text: "#0F172A",
-  textSecondary: "#475569",
-  textMuted: "#94A3B8",
+  text: "#1A1814",
+  textSecondary: "#4B4944",
+  textMuted: "#8A877F",
+  textFaint: "#B5B2AA",
   textInverse: "#FFFFFF",
 
   // Borders
-  border: "#E2E8F0",
-  borderLight: "#F1F5F9",
+  border: "#E7E4DC",
+  borderLight: "#F2F1EC",
+  borderStrong: "#D7D2C7",
 
   // Accent
   accent: "#2563EB",
-  accentLight: "#EFF6FF",
+  accentLight: "rgba(37, 99, 235, 0.08)",
   accentMuted: "#93C5FD",
 
   // Semantic
-  success: "#10B981",
-  successLight: "#ECFDF5",
-  warning: "#F59E0B",
-  warningLight: "#FFFBEB",
-  danger: "#EF4444",
-  dangerLight: "#FEF2F2",
-  coral: "#F97316",
-  coralLight: "#FFF7ED",
+  success: "#15803D",
+  successLight: "rgba(21, 128, 61, 0.10)",
+  warning: "#B45309",
+  warningLight: "rgba(180, 83, 9, 0.10)",
+  danger: "#B91C1C",
+  dangerLight: "rgba(185, 28, 28, 0.10)",
+  coral: "#B91C1C",
+  coralLight: "rgba(185, 28, 28, 0.10)",
 
   // Category Colors
-  categoryFood: "#F59E0B",
-  categoryFoodBg: "#FFFBEB",
-  categoryTransport: "#3B82F6",
-  categoryTransportBg: "#EFF6FF",
-  categoryAccommodation: "#10B981",
-  categoryAccommodationBg: "#ECFDF5",
-  categoryActivities: "#8B5CF6",
-  categoryActivitiesBg: "#F5F3FF",
-  categoryShopping: "#EC4899",
-  categoryShoppingBg: "#FDF2F8",
-  categoryOther: "#64748B",
-  categoryOtherBg: "#F8FAFC",
+  categoryFood: "#B45309",
+  categoryFoodBg: "rgba(180, 83, 9, 0.10)",
+  categoryTransport: "#1D4ED8",
+  categoryTransportBg: "rgba(29, 78, 216, 0.10)",
+  categoryAccommodation: "#15803D",
+  categoryAccommodationBg: "rgba(21, 128, 61, 0.10)",
+  categoryActivities: "#7C3AED",
+  categoryActivitiesBg: "rgba(124, 58, 237, 0.10)",
+  categoryShopping: "#BE185D",
+  categoryShoppingBg: "rgba(190, 24, 93, 0.10)",
+  categoryOther: "#8A877F",
+  categoryOtherBg: "#F2F1EC",
 
   // Navigation
   tabBar: "#FFFFFF",
-  tabBarBorder: "#F1F5F9",
+  tabBarBorder: "#E7E4DC",
   tabActive: "#2563EB",
-  tabInactive: "#94A3B8",
+  tabInactive: "#8A877F",
 
   // Misc
-  skeleton: "#E2E8F0",
+  skeleton: "#F2F1EC",
   overlay: "rgba(0,0,0,0.4)",
   shadow: "#000000",
-  shadowOpacity: 0.04,
+  shadowOpacity: 0,
   statusBar: "dark" as "dark" | "light",
 
   // Input
-  inputBg: "#F8FAFC",
-  inputBorder: "#E2E8F0",
-  inputText: "#0F172A",
-  inputPlaceholder: "#94A3B8",
+  inputBg: "#FAFAF7",
+  inputBorder: "#E7E4DC",
+  inputText: "#1A1814",
+  inputPlaceholder: "#8A877F",
 
   // Badge
-  aiBadgeBg: "#EFF6FF",
-  aiBadgeBorder: "#BFDBFE",
+  aiBadgeBg: "rgba(37, 99, 235, 0.08)",
+  aiBadgeBorder: "#93C5FD",
   aiBadgeText: "#2563EB",
 };
 
 export const darkColors: typeof lightColors = {
   // Backgrounds
-  background: "#0F1117",
-  surface: "#1A1D27",
-  surfaceAlt: "#232732",
-  card: "#1A1D27",
+  background: "#15130F",
+  surface: "#1E1C17",
+  surfaceAlt: "#26241D",
+  card: "#1E1C17",
 
   // Text
-  text: "#F1F5F9",
-  textSecondary: "#94A3B8",
-  textMuted: "#64748B",
-  textInverse: "#0F172A",
+  text: "#F2F1EC",
+  textSecondary: "#B5B2AA",
+  textMuted: "#8A877F",
+  textFaint: "#5C594F",
+  textInverse: "#15130F",
 
   // Borders
-  border: "#2A2E3A",
-  borderLight: "#1E2230",
+  border: "#332F26",
+  borderLight: "#26241D",
+  borderStrong: "#454034",
 
   // Accent
   accent: "#3B82F6",
-  accentLight: "#1E3A5F",
+  accentLight: "rgba(59, 130, 246, 0.12)",
   accentMuted: "#1D4ED8",
 
   // Semantic
   success: "#34D399",
-  successLight: "#064E3B",
+  successLight: "rgba(52, 211, 153, 0.12)",
   warning: "#FBBF24",
-  warningLight: "#78350F",
+  warningLight: "rgba(251, 191, 36, 0.12)",
   danger: "#F87171",
-  dangerLight: "#7F1D1D",
-  coral: "#FB923C",
-  coralLight: "#7C2D12",
+  dangerLight: "rgba(248, 113, 113, 0.12)",
+  coral: "#F87171",
+  coralLight: "rgba(248, 113, 113, 0.12)",
 
   // Category Colors
   categoryFood: "#FBBF24",
-  categoryFoodBg: "#422006",
+  categoryFoodBg: "rgba(251, 191, 36, 0.12)",
   categoryTransport: "#60A5FA",
-  categoryTransportBg: "#1E3A5F",
+  categoryTransportBg: "rgba(96, 165, 250, 0.12)",
   categoryAccommodation: "#34D399",
-  categoryAccommodationBg: "#064E3B",
+  categoryAccommodationBg: "rgba(52, 211, 153, 0.12)",
   categoryActivities: "#A78BFA",
-  categoryActivitiesBg: "#2E1065",
+  categoryActivitiesBg: "rgba(167, 139, 250, 0.12)",
   categoryShopping: "#F472B6",
-  categoryShoppingBg: "#831843",
-  categoryOther: "#94A3B8",
-  categoryOtherBg: "#1E293B",
+  categoryShoppingBg: "rgba(244, 114, 182, 0.12)",
+  categoryOther: "#8A877F",
+  categoryOtherBg: "#26241D",
 
   // Navigation
-  tabBar: "#141720",
-  tabBarBorder: "#1E2230",
+  tabBar: "#1A1814",
+  tabBarBorder: "#332F26",
   tabActive: "#3B82F6",
-  tabInactive: "#64748B",
+  tabInactive: "#8A877F",
 
   // Misc
-  skeleton: "#2A2E3A",
+  skeleton: "#26241D",
   overlay: "rgba(0,0,0,0.6)",
   shadow: "#000000",
-  shadowOpacity: 0.2,
+  shadowOpacity: 0,
   statusBar: "light" as const,
 
   // Input
-  inputBg: "#1A1D27",
-  inputBorder: "#2A2E3A",
-  inputText: "#F1F5F9",
-  inputPlaceholder: "#64748B",
+  inputBg: "#1E1C17",
+  inputBorder: "#332F26",
+  inputText: "#F2F1EC",
+  inputPlaceholder: "#8A877F",
 
   // Badge
-  aiBadgeBg: "#1E3A5F",
+  aiBadgeBg: "rgba(59, 130, 246, 0.12)",
   aiBadgeBorder: "#1D4ED8",
   aiBadgeText: "#60A5FA",
 };

@@ -74,7 +74,7 @@ export default function TripsIndex() {
       <FlatList
         data={filteredTrips}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => <TripCard trip={item} />}
         ListEmptyComponent={() => (
@@ -92,22 +92,22 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, borderBottomWidth: 1 },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  title: { fontSize: 24, fontFamily: "Inter-Bold" },
-  subtitle: { fontSize: 12, fontFamily: "Inter-Medium", marginTop: 2 },
-  filterBtn: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  title: { fontSize: 24, fontWeight: "700" },
+  subtitle: { fontSize: 12, marginTop: 2 },
+  filterBtn: { width: 36, height: 36, borderRadius: 6, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
     marginBottom: 12,
   },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 14, fontFamily: "Inter-Medium" },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 14 },
   filtersScroll: { flexGrow: 0 },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, borderWidth: 1 },
-  filterText: { fontSize: 12, fontFamily: "Inter-Bold" },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6, marginRight: 8, borderWidth: 1 },
+  filterText: { fontSize: 12, fontWeight: "600" },
   emptyState: { alignItems: "center", paddingVertical: 60 },
-  emptyText: { fontSize: 16, fontFamily: "Inter-Bold", marginTop: 12 },
+  emptyText: { fontSize: 16, fontWeight: "600", marginTop: 12 },
 });

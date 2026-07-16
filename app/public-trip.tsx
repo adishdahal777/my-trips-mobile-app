@@ -2,7 +2,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
 import { useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OsmMapView } from "../components/OsmMapView";
 import { ShareSheet } from "../components/ShareSheet";
@@ -11,6 +11,8 @@ import { useTheme } from "../context/ThemeContext";
 import type { Trip } from "../data/mockData";
 import { apiFetch } from "../services/api";
 import { formatCurrency } from "../utils/formatCurrency";
+import { getCategoryIcon } from "../utils/categoryIcon";
+import { SkeletonImage } from "../components/SkeletonImage";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -84,7 +86,7 @@ export default function PublicTrip() {
             </View>
             <View style={styles.heroBottom}>
               <View style={styles.heroUserRow}>
-                <Image source={{ uri: user.avatar }} style={styles.heroAvatar} />
+                <SkeletonImage source={{ uri: user.avatar }} style={styles.heroAvatar} />
                 <Text style={styles.heroUserName}>{user.name}</Text>
               </View>
               <Text style={styles.heroTitle}>{trip.name}</Text>
@@ -154,7 +156,7 @@ export default function PublicTrip() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoScroll}>
               {publicPhotos.map((p) => (
                 <View key={p.id} style={[styles.photoCard, { borderColor: colors.border }]}>
-                  <Image source={{ uri: p.url }} style={styles.photoImage} />
+                  <SkeletonImage source={{ uri: p.url }} style={styles.photoImage} />
                   {p.caption ? (
                     <View style={styles.photoCaptionWrap}>
                       <Text style={styles.photoCaption} numberOfLines={1}>{p.caption}</Text>
@@ -193,7 +195,7 @@ export default function PublicTrip() {
               {publicExpenses.map((e, i) => (
                 <View key={e.id} style={[styles.expenseRow, i < publicExpenses.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.borderLight }]}>
                   <View style={[styles.expenseIcon, { backgroundColor: colors.surface }]}>
-                    <Text style={{ fontSize: 16 }}>{e.icon}</Text>
+                    <Ionicons name={getCategoryIcon(e.category) as any} size={16} color={colors.textSecondary} />
                   </View>
                   <View style={styles.expenseMiddle}>
                     <Text style={[styles.expenseDesc, { color: colors.text }]} numberOfLines={1}>{e.description}</Text>
@@ -231,9 +233,9 @@ export default function PublicTrip() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  notFoundTitle: { fontSize: 18, fontFamily: "Inter-Bold", marginTop: 12, marginBottom: 20 },
+  notFoundTitle: { fontSize: 18, marginTop: 12, marginBottom: 20 },
   backBtnLarge: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16 },
-  backBtnLargeText: { color: "#FFF", fontSize: 14, fontFamily: "Inter-Bold" },
+  backBtnLargeText: { color: "#FFF", fontSize: 14 },
 
   // Hero
   hero: { height: 320, justifyContent: "flex-end" },
@@ -244,19 +246,19 @@ const styles = StyleSheet.create({
   heroBottom: { marginBottom: 24 },
   heroUserRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   heroAvatar: { width: 28, height: 28, borderRadius: 14, marginRight: 8, borderWidth: 2, borderColor: "#FFF" },
-  heroUserName: { color: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "Inter-Bold" },
-  heroTitle: { color: "#FFF", fontSize: 28, fontFamily: "Inter-Bold", marginBottom: 4 },
-  heroDest: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontFamily: "Inter-Medium" },
+  heroUserName: { color: "rgba(255,255,255,0.9)", fontSize: 13 },
+  heroTitle: { color: "#FFF", fontSize: 28, marginBottom: 4 },
+  heroDest: { color: "rgba(255,255,255,0.8)", fontSize: 14 },
 
   // Stats
   statsBar: { flexDirection: "row", marginHorizontal: 20, marginTop: -24, borderRadius: 16, borderWidth: 1, paddingVertical: 14 },
   statItem: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  statVal: { fontSize: 13, fontFamily: "Inter-Bold" },
+  statVal: { fontSize: 13 },
 
   // Sections
   section: { marginTop: 24, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter-Bold", marginBottom: 12 },
-  description: { fontSize: 14, fontFamily: "Inter-Medium", lineHeight: 22 },
+  sectionTitle: { fontSize: 18, marginBottom: 12 },
+  description: { fontSize: 14, lineHeight: 22 },
 
   // Map
   mapWrap: { height: 200, borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 16 },
@@ -267,40 +269,40 @@ const styles = StyleSheet.create({
   routeRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 2 },
   routeMarkerCol: { alignItems: "center", width: 32, marginRight: 12 },
   routeMarker: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  routeMarkerText: { color: "#FFF", fontSize: 11, fontFamily: "Inter-Bold" },
+  routeMarkerText: { color: "#FFF", fontSize: 11 },
   routeLine: { width: 2, height: 24 },
   routeInfo: { flex: 1, paddingVertical: 4 },
-  routeName: { fontSize: 14, fontFamily: "Inter-Bold", marginBottom: 2 },
-  routeSub: { fontSize: 11, fontFamily: "Inter-Medium" },
+  routeName: { fontSize: 14, marginBottom: 2 },
+  routeSub: { fontSize: 11 },
 
   // Photos
   photoScroll: { paddingRight: 20 },
   photoCard: { width: 180, height: 140, borderRadius: 14, overflow: "hidden", marginRight: 12, borderWidth: 1 },
   photoImage: { width: "100%", height: "100%" },
   photoCaptionWrap: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: 10, paddingVertical: 6 },
-  photoCaption: { color: "#FFF", fontSize: 11, fontFamily: "Inter-Medium" },
+  photoCaption: { color: "#FFF", fontSize: 11 },
 
   // Notes
   noteCard: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
   noteHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   noteMood: { fontSize: 18, marginRight: 8 },
-  noteTitle: { fontSize: 15, fontFamily: "Inter-Bold", flex: 1 },
-  noteBody: { fontSize: 13, fontFamily: "Inter-Medium", lineHeight: 20, marginBottom: 8 },
-  noteDate: { fontSize: 10, fontFamily: "Inter-Medium" },
+  noteTitle: { fontSize: 15, flex: 1 },
+  noteBody: { fontSize: 13, lineHeight: 20, marginBottom: 8 },
+  noteDate: { fontSize: 10 },
 
   // Expenses
   expenseCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden", padding: 4 },
   expenseRow: { flexDirection: "row", alignItems: "center", padding: 12 },
   expenseIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 },
   expenseMiddle: { flex: 1 },
-  expenseDesc: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  expenseCat: { fontSize: 10, fontFamily: "Inter-Medium" },
-  expenseAmt: { fontSize: 14, fontFamily: "Inter-Bold" },
+  expenseDesc: { fontSize: 13, marginBottom: 2 },
+  expenseCat: { fontSize: 10 },
+  expenseAmt: { fontSize: 14 },
 
   // CTA
   ctaBanner: { marginHorizontal: 20, marginTop: 28, padding: 24, borderRadius: 24, alignItems: "center" },
-  ctaTitle: { color: "#FFF", fontSize: 18, fontFamily: "Inter-Bold", marginTop: 8, marginBottom: 4 },
-  ctaSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter-Medium", textAlign: "center", marginBottom: 16 },
+  ctaTitle: { color: "#FFF", fontSize: 18, marginTop: 8, marginBottom: 4 },
+  ctaSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginBottom: 16 },
   ctaBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16, gap: 6 },
-  ctaBtnText: { fontSize: 13, fontFamily: "Inter-Bold" },
+  ctaBtnText: { fontSize: 13 },
 });

@@ -1,18 +1,22 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../../utils/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DestinationCard } from "../../components/DestinationCard";
 import { ExpenseFeedItem } from "../../components/ExpenseFeedItem";
 import { FeaturedTripCard } from "../../components/FeaturedTripCard";
-import { FloatingActionButton } from "../../components/FloatingActionButton";
 import { HomeHeader } from "../../components/HomeHeader";
+import { RecommendedTripCard } from "../../components/RecommendedTripCard";
 import { StatsBanner } from "../../components/StatsBanner";
 import { TripSmallCard } from "../../components/TripSmallCard";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useTrips } from "../../context/TripContext";
+import { apiFetch } from "../../services/api";
 import { calculateUserStats } from "../../utils/calculateStats";
+import { getRecommendedDestinations, type Destination } from "../../utils/destinationRecommend";
+import type { Recommendation } from "../../utils/recommend";
 
 export default function Dashboard() {
   const { colors } = useTheme();
@@ -20,6 +24,22 @@ export default function Dashboard() {
   const { trips } = useTrips();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+
+  useEffect(() => {
+    apiFetch("/recommendations?limit=6")
+      .then((res) => setRecommendations(res.data))
+      .catch(() => setRecommendations([]));
+    apiFetch("/destinations")
+      .then((res) => setDestinations(res.data))
+      .catch(() => setDestinations([]));
+  }, []);
+
+  const recommendedDestinations = useMemo(
+    () => getRecommendedDestinations(destinations, trips, 8),
+    [destinations, trips]
+  );
 
   const stats = useMemo(() => calculateUserStats(trips), [trips]);
 
@@ -35,22 +55,6 @@ export default function Dashboard() {
     const all = trips.flatMap((t) => t.expenses.map((e) => ({ ...e, tripName: t.name })));
     return all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
   }, [trips]);
-
-  const handleQuickAction = (type: string) => {
-    switch (type) {
-      case "trip":
-        router.push("CreateTrip");
-        break;
-      case "expense":
-        if (featuredTrip) router.push("TripDetail", { id: featuredTrip.id });
-        break;
-      case "photo":
-        if (featuredTrip) router.push("TripDetail", { id: featuredTrip.id });
-        break;
-      default:
-        break;
-    }
-  };
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
@@ -120,6 +124,37 @@ export default function Dashboard() {
           </ScrollView>
         </View>
 
+        {/* Zone 4b: Recommended For You */}
+        {recommendations.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended For You</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tripsScrollContent}>
+              {recommendations.map((rec) => (
+                <RecommendedTripCard key={rec.trip.id} recommendation={rec} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Zone 4c: Popular Destinations For You */}
+        {recommendedDestinations.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Popular Destinations For You</Text>
+              <Pressable onPress={() => router.push("SuggestDestination")}>
+                <Text style={[styles.sectionLink, { color: colors.accent }]}>+ Suggest</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tripsScrollContent}>
+              {recommendedDestinations.map((dest) => (
+                <DestinationCard key={dest.id} destination={dest} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Zone 5: Recent Expenses */}
         <View style={[styles.section, { paddingHorizontal: 20 }]}>
           <View style={styles.sectionHeader}>
@@ -153,9 +188,6 @@ export default function Dashboard() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Zone 6: FAB */}
-      <FloatingActionButton onPressItem={handleQuickAction} />
     </SafeAreaView>
   );
 }
@@ -172,12 +204,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 14,
   },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter-Bold" },
-  sectionLink: { fontSize: 12, fontFamily: "Inter-Bold" },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  sectionLink: { fontSize: 12, fontWeight: "600" },
   tripsScrollContent: { paddingHorizontal: 20 },
-  viewAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  viewAllText: { fontSize: 10, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 0.5 },
-  expenseCard: { borderRadius: 16, paddingHorizontal: 16, borderWidth: 1 },
+  viewAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  viewAllText: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  expenseCard: { borderRadius: 8, paddingHorizontal: 16, borderWidth: 1 },
   searchBar: {
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -193,12 +225,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
   },
-  searchText: { flex: 1, marginLeft: 10, fontSize: 14, fontFamily: "Inter-Medium" },
+  searchText: { flex: 1, marginLeft: 10, fontSize: 14 },
   memoryCard: {
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 24,
     overflow: "hidden",
     marginTop: 8,
@@ -212,8 +244,8 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: "rgba(255,255,255,0.12)",
   },
-  memoryTitle: { color: "#FFF", fontFamily: "Inter-Bold", fontSize: 16, marginBottom: 4 },
-  memorySub: { color: "rgba(255,255,255,0.7)", fontFamily: "Inter-Medium", fontSize: 12, marginBottom: 16 },
-  memoryBtn: { alignSelf: "flex-start", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  memoryBtnText: { fontFamily: "Inter-Bold", fontSize: 12 },
+  memoryTitle: { color: "#FFF", fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  memorySub: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginBottom: 16 },
+  memoryBtn: { alignSelf: "flex-start", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 },
+  memoryBtnText: { fontSize: 12, fontWeight: "700" },
 });

@@ -18,17 +18,15 @@ export function GradientButton({ title, onPress, style, disabled }: Props) {
         colors={[colors.accent, "#6366F1"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.gradient}
-      >
-        <Text style={styles.text}>{title}</Text>
-      </LinearGradient>
+        style={StyleSheet.absoluteFill}
+      />
+      <Text style={styles.text}>{title}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  pressable: {},
+  pressable: { paddingVertical: 15, borderRadius: 14, alignItems: "center", overflow: "hidden" },
   disabled: { opacity: 0.5 },
-  gradient: { paddingVertical: 15, borderRadius: 14, alignItems: "center" },
-  text: { color: "#FFFFFF", fontSize: 15, fontFamily: "Inter-Bold" },
+  text: { color: "#FFFFFF", fontSize: 15 },
 });

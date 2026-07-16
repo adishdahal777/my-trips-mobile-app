@@ -12,6 +12,7 @@ export interface OsmStop {
 
 interface OsmMapViewProps {
   stops: OsmStop[];
+  center?: { lat: number; lng: number };
   strokeColor?: string;
   colorMap?: Record<string, string>;
   scrollEnabled?: boolean;
@@ -21,7 +22,7 @@ interface OsmMapViewProps {
 
 const DEFAULT_COLOR_MAP: Record<string, string> = { green: "#22C55E", blue: "#6366F1", coral: "#FF6B6B" };
 
-function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<string, string>, interactive: boolean) {
+function buildHtml(stops: OsmStop[], center: { lat: number; lng: number } | undefined, strokeColor: string, colorMap: Record<string, string>, interactive: boolean) {
   const points = stops.map((s) => [s.lat, s.lng]);
   const markers = stops.map((s) => ({
     lat: s.lat,
@@ -40,6 +41,8 @@ function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<strin
     .stop-marker { width: 28px; height: 28px; border-radius: 14px; border: 2.5px solid #fff; display: flex;
       align-items: center; justify-content: center; color: #fff; font-family: sans-serif; font-weight: 700;
       font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .me-marker { width: 16px; height: 16px; border-radius: 8px; background: #2563EB; border: 3px solid #fff;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.25); }
   </style>
 </head>
 <body>
@@ -48,6 +51,7 @@ function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<strin
   <script>
     const points = ${JSON.stringify(points)};
     const markers = ${JSON.stringify(markers)};
+    const center = ${JSON.stringify(center ?? null)};
     const map = L.map('map', {
       zoomControl: ${interactive},
       dragging: ${interactive},
@@ -61,8 +65,21 @@ function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<strin
 
     if (points.length > 0) {
       if (points.length > 1) {
-        L.polyline(points, { color: '${strokeColor}', weight: 4 }).addTo(map);
+        const straightLine = L.polyline(points, { color: '${strokeColor}', weight: 3, opacity: 0.6, dashArray: '2,8' }).addTo(map);
         map.fitBounds(points, { padding: [30, 30] });
+
+        const coordsStr = points.map((p) => p[1] + ',' + p[0]).join(';');
+        fetch('https://router.project-osrm.org/route/v1/driving/' + coordsStr + '?overview=full&geometries=geojson')
+          .then((r) => r.json())
+          .then((data) => {
+            const route = data.routes && data.routes[0];
+            if (!route) return;
+            const routeCoords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+            map.removeLayer(straightLine);
+            L.polyline(routeCoords, { color: '${strokeColor}', weight: 4 }).addTo(map);
+            map.fitBounds(routeCoords, { padding: [30, 30] });
+          })
+          .catch(() => {});
       } else {
         map.setView(points[0], 13);
       }
@@ -75,6 +92,11 @@ function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<strin
         });
         L.marker([m.lat, m.lng], { icon }).addTo(map);
       });
+    } else if (center) {
+      map.setView([center.lat, center.lng], 13);
+      L.marker([center.lat, center.lng], {
+        icon: L.divIcon({ className: '', html: '<div class="me-marker"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }),
+      }).addTo(map);
     } else {
       map.setView([27.7, 85.3], 3);
     }
@@ -83,10 +105,10 @@ function buildHtml(stops: OsmStop[], strokeColor: string, colorMap: Record<strin
 </html>`;
 }
 
-export function OsmMapView({ stops, strokeColor = "#6366F1", colorMap, scrollEnabled = true, zoomEnabled = true, style }: OsmMapViewProps) {
+export function OsmMapView({ stops, center, strokeColor = "#6366F1", colorMap, scrollEnabled = true, zoomEnabled = true, style }: OsmMapViewProps) {
   const html = useMemo(
-    () => buildHtml(stops, strokeColor, { ...DEFAULT_COLOR_MAP, ...colorMap }, scrollEnabled || zoomEnabled),
-    [stops, strokeColor, colorMap, scrollEnabled, zoomEnabled]
+    () => buildHtml(stops, center, strokeColor, { ...DEFAULT_COLOR_MAP, ...colorMap }, scrollEnabled || zoomEnabled),
+    [stops, center, strokeColor, colorMap, scrollEnabled, zoomEnabled]
   );
 
   return (

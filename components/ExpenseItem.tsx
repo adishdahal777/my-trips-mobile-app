@@ -2,6 +2,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { formatCurrency } from "../utils/formatCurrency";
+import { getCategoryIcon } from "../utils/categoryIcon";
 
 interface Props {
   expense: {
@@ -25,7 +26,7 @@ export function ExpenseItem({ expense, tripCurrency, onTogglePrivacy }: Props) {
   return (
     <View style={[styles.row, { borderBottomColor: colors.borderLight }]}>
       <View style={[styles.iconWrap, { backgroundColor: colors.surface }]}>
-        <Text style={styles.icon}>{expense.icon}</Text>
+        <Ionicons name={getCategoryIcon(expense.category) as any} size={16} color={colors.textSecondary} />
       </View>
       <View style={styles.middle}>
         <View style={styles.descRow}>
@@ -53,15 +54,15 @@ export function ExpenseItem({ expense, tripCurrency, onTogglePrivacy }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 },
-  iconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  iconWrap: { width: 38, height: 38, borderRadius: 6, alignItems: "center", justifyContent: "center", marginRight: 12 },
   icon: { fontSize: 16 },
   middle: { flex: 1 },
   descRow: { flexDirection: "row", alignItems: "center" },
-  desc: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  category: { fontSize: 10, fontFamily: "Inter-Medium" },
+  desc: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
+  category: { fontSize: 10 },
   right: { alignItems: "flex-end", marginRight: 4 },
-  amount: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  date: { fontSize: 10, fontFamily: "Inter-Medium" },
-  privacyBtn: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", marginLeft: 8 },
+  amount: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
+  date: { fontSize: 10 },
+  privacyBtn: { width: 30, height: 30, borderRadius: 6, alignItems: "center", justifyContent: "center", marginLeft: 8 },
 });
 

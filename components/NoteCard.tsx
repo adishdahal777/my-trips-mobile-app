@@ -34,10 +34,10 @@ export function NoteCard({ note, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, padding: 14, borderWidth: 1 },
+  card: { borderRadius: 8, padding: 14, borderWidth: 1 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   mood: { fontSize: 20 },
-  title: { fontSize: 13, fontFamily: "Inter-Bold", color: "#0F172A", marginBottom: 4 },
-  body: { fontSize: 11, fontFamily: "Inter-Medium", color: "rgba(15,23,42,0.6)", marginBottom: 8, lineHeight: 16 },
-  date: { fontSize: 9, fontFamily: "Inter-Medium", color: "rgba(15,23,42,0.4)" },
+  title: { fontSize: 13, fontWeight: "700", color: "#0F172A", marginBottom: 4 },
+  body: { fontSize: 11, color: "rgba(15,23,42,0.6)", marginBottom: 8, lineHeight: 16 },
+  date: { fontSize: 9, color: "rgba(15,23,42,0.4)" },
 });

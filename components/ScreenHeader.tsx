@@ -36,7 +36,7 @@ export function ScreenHeader({ title, showBack, rightIcon, onRightPress }: Props
 
 const styles = StyleSheet.create({
   container: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  btn: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 17, fontFamily: "Inter-Bold", flex: 1, textAlign: "center" },
+  btn: { width: 36, height: 36, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  title: { fontSize: 17, fontWeight: "700", flex: 1, textAlign: "center" },
   spacer: { width: 36 },
 });

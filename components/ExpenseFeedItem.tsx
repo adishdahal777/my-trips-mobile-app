@@ -1,6 +1,8 @@
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme, ThemeColors } from "../context/ThemeContext";
 import { formatCurrency } from "../utils/formatCurrency";
+import { getCategoryIcon } from "../utils/categoryIcon";
 
 interface ExpenseFeedItemProps {
   expense: {
@@ -35,7 +37,7 @@ export function ExpenseFeedItem({ expense, tripName, isLast }: ExpenseFeedItemPr
   return (
     <View style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.borderLight }]}>
       <View style={[styles.iconCircle, { backgroundColor: catColor.bg }]}>
-        <Text style={styles.emoji}>{expense.icon}</Text>
+        <Ionicons name={getCategoryIcon(expense.category) as any} size={18} color={catColor.text} />
       </View>
 
       <View style={styles.middle}>
@@ -64,15 +66,15 @@ export function ExpenseFeedItem({ expense, tripName, isLast }: ExpenseFeedItemPr
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 14 },
-  iconCircle: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  iconCircle: { width: 42, height: 42, borderRadius: 6, alignItems: "center", justifyContent: "center", marginRight: 12 },
   emoji: { fontSize: 18 },
   middle: { flex: 1 },
   descRow: { flexDirection: "row", alignItems: "center", marginBottom: 3 },
-  desc: { fontSize: 13, fontFamily: "Inter-Bold", marginRight: 6, flexShrink: 1 },
+  desc: { fontSize: 13, fontWeight: "600", marginRight: 6, flexShrink: 1 },
   aiBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1 },
-  aiText: { fontSize: 8, fontFamily: "Inter-Bold", textTransform: "uppercase" },
-  tripLabel: { fontSize: 10, fontFamily: "Inter-Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  aiText: { fontSize: 8, fontWeight: "700", textTransform: "uppercase" },
+  tripLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
   right: { alignItems: "flex-end" },
-  amount: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  date: { fontSize: 10, fontFamily: "Inter-Medium" },
+  amount: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
+  date: { fontSize: 10 },
 });

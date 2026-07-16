@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,10 +8,16 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { TripProvider } from './context/TripContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef } from './utils/navigation';
+import { setupNotificationListeners } from './utils/push';
 import './app/global.css';
 
 function AppContent() {
   const { colors, isDark } = useTheme();
+
+  useEffect(() => {
+    return setupNotificationListeners();
+  }, []);
+
   return (
     <NavigationContainer ref={navigationRef}>
       <StatusBar

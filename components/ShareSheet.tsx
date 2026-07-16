@@ -97,30 +97,30 @@ export function ShareSheet({ visible, onClose, trip }: Props) {
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
-  sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingBottom: 40 },
+  sheet: { borderTopLeftRadius: 12, borderTopRightRadius: 12, paddingHorizontal: 24, paddingBottom: 40 },
   handle: { alignItems: "center", paddingVertical: 12 },
   handleBar: { width: 40, height: 4, borderRadius: 2 },
 
   // Trip Preview
-  tripPreview: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 16, borderWidth: 1, marginTop: 8, marginBottom: 16 },
-  tripPreviewLeft: { width: 44, height: 44, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  tripPreview: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 8, borderWidth: 1, marginTop: 8, marginBottom: 16 },
+  tripPreviewLeft: { width: 44, height: 44, borderRadius: 6, backgroundColor: "rgba(0,0,0,0.05)", alignItems: "center", justifyContent: "center", marginRight: 12 },
   tripEmoji: { fontSize: 22 },
   tripPreviewInfo: { flex: 1 },
-  tripPreviewName: { fontSize: 15, fontFamily: "Inter-Bold", marginBottom: 2 },
-  tripPreviewDest: { fontSize: 12, fontFamily: "Inter-Medium" },
+  tripPreviewName: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  tripPreviewDest: { fontSize: 12 },
 
   // Link
-  linkBox: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 14, borderWidth: 1, marginBottom: 24, gap: 8 },
-  linkText: { flex: 1, fontSize: 12, fontFamily: "Inter-Medium" },
-  copyBadge: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  linkBox: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 8, borderWidth: 1, marginBottom: 24, gap: 8 },
+  linkText: { flex: 1, fontSize: 12 },
+  copyBadge: { width: 30, height: 30, borderRadius: 6, alignItems: "center", justifyContent: "center" },
 
   // Options
   optionsRow: { flexDirection: "row", justifyContent: "space-around", marginBottom: 24 },
   optionItem: { alignItems: "center", width: 72 },
-  optionIcon: { width: 56, height: 56, borderRadius: 18, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  optionLabel: { fontSize: 11, fontFamily: "Inter-Medium", textAlign: "center" },
+  optionIcon: { width: 56, height: 56, borderRadius: 8, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  optionLabel: { fontSize: 11, fontWeight: "600", textAlign: "center" },
 
   // Info
   infoRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 16, borderTopWidth: 1 },
-  infoText: { flex: 1, fontSize: 11, fontFamily: "Inter-Medium", lineHeight: 16 },
+  infoText: { flex: 1, fontSize: 11, lineHeight: 16 },
 });

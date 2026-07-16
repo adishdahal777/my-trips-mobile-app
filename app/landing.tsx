@@ -1,19 +1,50 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
 import type { Trip } from "../data/mockData";
-import { MOCK_DESTINATIONS } from "../data/mockData";
+import type { Destination } from "../utils/destinationRecommend";
 import { apiFetch } from "../services/api";
+import { SkeletonImage } from "../components/SkeletonImage";
 
 const { width: SW } = Dimensions.get("window");
+
+const FEATURE_ICONS: Record<string, string> = {
+  "map-pin": "location-outline",
+  "credit-card": "card-outline",
+  camera: "camera-outline",
+  "pen-line": "pencil-outline",
+  compass: "compass-outline",
+  globe: "globe-outline",
+  users: "people-outline",
+  "shield-check": "shield-checkmark-outline",
+  heart: "heart-outline",
+  star: "star-outline",
+  "upload-cloud": "cloud-upload-outline",
+  calendar: "calendar-outline",
+};
+
+const FEATURE_COLORS: Record<string, string> = {
+  brand: "#3B82F6",
+  coral: "#FF6B6B",
+  teal: "#10B981",
+  purple: "#8B5CF6",
+};
+
+type LandingStats = { totalTrips: number; totalUsers: number; totalPhotos: number };
+type FeatureCard = { id: string; icon: string; colorKey: string; title: string; description: string };
+type Rating = { id: string; stars: number; comment: string; user: { name: string; avatar: string } };
 
 export default function Landing() {
   const { colors } = useTheme();
   const scrollY = useRef(new Animated.Value(0)).current;
   const [feedTrips, setFeedTrips] = useState<Trip[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [stats, setStats] = useState<LandingStats>({ totalTrips: 0, totalUsers: 0, totalPhotos: 0 });
+  const [featureCards, setFeatureCards] = useState<FeatureCard[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -24,10 +55,28 @@ export default function Landing() {
         setFeedTrips([]);
       }
     })();
+    (async () => {
+      try {
+        const res = await apiFetch("/destinations");
+        setDestinations(res.data);
+      } catch {
+        setDestinations([]);
+      }
+    })();
+    (async () => {
+      try {
+        const res = await apiFetch("/landing");
+        setStats(res.stats);
+        setFeatureCards(res.featureCards);
+        setRatings(res.ratings);
+      } catch {
+        // keep defaults
+      }
+    })();
   }, []);
 
   const topTrips = [...feedTrips].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 4);
-  const topDests = MOCK_DESTINATIONS.slice(0, 4);
+  const topDests = destinations.slice(0, 4);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -78,14 +127,14 @@ export default function Landing() {
             <View style={styles.socialProof}>
               <View style={styles.avatarStack}>
                 {feedTrips.slice(0, 4).map((t, i) => (
-                  <Image
+                  <SkeletonImage
                     key={t.id}
                     source={{ uri: t.user?.avatar }}
                     style={[styles.stackAvatar, { left: i * 20, zIndex: 10 - i }]}
                   />
                 ))}
               </View>
-              <Text style={styles.socialText}>Join 2,400+ travelers sharing their stories</Text>
+              <Text style={styles.socialText}>Join {stats.totalUsers}+ travelers sharing their stories</Text>
             </View>
           </SafeAreaView>
         </ImageBackground>
@@ -93,9 +142,9 @@ export default function Landing() {
         {/* Stats Bar */}
         <View style={[styles.statsBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {[
-            { val: "2.4K", label: "Travelers", icon: "people" as const },
-            { val: "8.5K", label: "Trips", icon: "map" as const },
-            { val: "142", label: "Countries", icon: "globe" as const },
+            { val: String(stats.totalUsers), label: "Travelers", icon: "people" as const },
+            { val: String(stats.totalTrips), label: "Trips", icon: "map" as const },
+            { val: String(stats.totalPhotos), label: "Photos", icon: "camera" as const },
           ].map((s) => (
             <View key={s.label} style={styles.statItem}>
               <Ionicons name={s.icon} size={16} color={colors.accent} />
@@ -119,11 +168,11 @@ export default function Landing() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
             {topTrips.map((trip) => (
               <View key={trip.id} style={[styles.tripCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Image source={{ uri: trip.coverPhoto }} style={styles.tripImage} />
+                <SkeletonImage source={{ uri: trip.coverPhoto }} style={styles.tripImage} />
                 <View style={styles.tripCardOverlay} />
                 <View style={styles.tripCardContent}>
                   <View style={styles.tripUserRow}>
-                    <Image source={{ uri: trip.user?.avatar }} style={styles.tripUserAvatar} />
+                    <SkeletonImage source={{ uri: trip.user?.avatar }} style={styles.tripUserAvatar} />
                     <Text style={styles.tripUserName}>{trip.user?.name}</Text>
                   </View>
                   <Text style={styles.tripCardName}>{trip.name}</Text>
@@ -155,13 +204,13 @@ export default function Landing() {
           <View style={styles.destGrid}>
             {topDests.map((d) => (
               <View key={d.id} style={[styles.destCard, { borderColor: colors.border }]}>
-                <Image source={{ uri: d.photo }} style={styles.destImage} />
+                <SkeletonImage source={{ uri: d.coverImage }} style={styles.destImage} />
                 <View style={styles.destOverlay} />
                 <View style={styles.destContent}>
-                  <Text style={styles.destCity}>{d.city}</Text>
+                  <Text style={styles.destCity}>{d.name}</Text>
                   <Text style={styles.destCountry}>{d.flag} {d.country}</Text>
                   <View style={styles.destCostChip}>
-                    <Text style={styles.destCostText}>{d.estimatedCost}</Text>
+                    <Text style={styles.destCostText}>{d.tripCount} trips</Text>
                   </View>
                 </View>
               </View>
@@ -173,23 +222,40 @@ export default function Landing() {
         <View style={[styles.section, { paddingHorizontal: 20, marginBottom: 8 }]}>
           <Text style={[styles.sectionTag, { color: colors.textMuted, marginBottom: 4 }]}>Why My Trips?</Text>
           <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>Everything you need</Text>
-          {[
-            { icon: "map-outline" as const, title: "Route Planning", desc: "Plot stops on a map and visualize your entire journey", color: "#3B82F6" },
-            { icon: "wallet-outline" as const, title: "Expense Tracking", desc: "AI-powered categorization keeps your budget in check", color: "#10B981" },
-            { icon: "camera-outline" as const, title: "Photo Memories", desc: "Capture and organize photos by location and date", color: "#F59E0B" },
-            { icon: "globe-outline" as const, title: "Social Feed", desc: "Share public trips and discover inspiring travel stories", color: "#8B5CF6" },
-          ].map((f, i) => (
-            <View key={i} style={[styles.featureRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.featureIcon, { backgroundColor: f.color + "15" }]}>
-                <Ionicons name={f.icon} size={22} color={f.color} />
+          {featureCards.map((f) => (
+            <View key={f.id} style={[styles.featureRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.featureIcon, { backgroundColor: (FEATURE_COLORS[f.colorKey] ?? "#3B82F6") + "15" }]}>
+                <Ionicons name={(FEATURE_ICONS[f.icon] ?? "star-outline") as any} size={22} color={FEATURE_COLORS[f.colorKey] ?? "#3B82F6"} />
               </View>
               <View style={styles.featureText}>
                 <Text style={[styles.featureTitle, { color: colors.text }]}>{f.title}</Text>
-                <Text style={[styles.featureDesc, { color: colors.textMuted }]}>{f.desc}</Text>
+                <Text style={[styles.featureDesc, { color: colors.textMuted }]}>{f.description}</Text>
               </View>
             </View>
           ))}
         </View>
+
+        {/* Loved By Travelers */}
+        {ratings.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: 20, marginBottom: 8 }]}>
+            <Text style={[styles.sectionTag, { color: colors.textMuted, marginBottom: 4 }]}>Testimonials</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>Loved by travelers</Text>
+            {ratings.map((r) => (
+              <View key={r.id} style={[styles.featureRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <SkeletonImage source={{ uri: r.user.avatar }} style={styles.tripUserAvatar} />
+                <View style={styles.featureText}>
+                  <View style={{ flexDirection: "row", marginBottom: 4 }}>
+                    {Array.from({ length: r.stars }).map((_, i) => (
+                      <Ionicons key={i} name="star" size={12} color="#F59E0B" />
+                    ))}
+                  </View>
+                  <Text style={[styles.featureTitle, { color: colors.text }]}>{r.user.name}</Text>
+                  <Text style={[styles.featureDesc, { color: colors.textMuted }]}>{r.comment}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Bottom CTA */}
         <View style={[styles.bottomCTA, { backgroundColor: colors.accent }]}>
@@ -216,34 +282,34 @@ const styles = StyleSheet.create({
   heroContent: { flex: 1, justifyContent: "space-between", padding: 24, paddingBottom: 30 },
   logoRow: { flexDirection: "row", alignItems: "center" },
   logoBadge: { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 8 },
-  logoText: { color: "#FFF", fontSize: 18, fontFamily: "Inter-Bold" },
+  logoText: { color: "#FFF", fontSize: 18 },
   heroCenter: { marginBottom: 10 },
-  heroTagline: { color: "rgba(255,255,255,0.7)", fontSize: 16, fontFamily: "Inter-Medium", marginBottom: 4 },
-  heroTitle: { color: "#FFF", fontSize: 36, fontFamily: "Inter-Bold", lineHeight: 42, marginBottom: 10 },
-  heroSub: { color: "rgba(255,255,255,0.7)", fontSize: 14, fontFamily: "Inter-Medium", lineHeight: 22 },
+  heroTagline: { color: "rgba(255,255,255,0.7)", fontSize: 16, marginBottom: 4 },
+  heroTitle: { color: "#FFF", fontSize: 36, lineHeight: 42, marginBottom: 10 },
+  heroSub: { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 22 },
   heroCTAs: { flexDirection: "row", gap: 10, marginBottom: 20 },
   primaryBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#FF6B6B", paddingVertical: 16, borderRadius: 16, gap: 6 },
-  primaryBtnText: { color: "#FFF", fontSize: 15, fontFamily: "Inter-Bold" },
+  primaryBtnText: { color: "#FFF", fontSize: 15 },
   secondaryBtn: { paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, borderWidth: 1 },
-  secondaryBtnText: { color: "#FFF", fontSize: 15, fontFamily: "Inter-Bold" },
+  secondaryBtnText: { color: "#FFF", fontSize: 15 },
   socialProof: { flexDirection: "row", alignItems: "center" },
   avatarStack: { flexDirection: "row", marginRight: 10, width: 90, height: 28 },
   stackAvatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: "rgba(0,0,0,0.3)", position: "absolute" },
-  socialText: { color: "rgba(255,255,255,0.6)", fontSize: 11, fontFamily: "Inter-Medium", flex: 1 },
+  socialText: { color: "rgba(255,255,255,0.6)", fontSize: 11, flex: 1 },
 
   // Stats
   statsBar: { flexDirection: "row", marginHorizontal: 20, marginTop: -20, borderRadius: 16, borderWidth: 1, paddingVertical: 16 },
   statItem: { flex: 1, alignItems: "center" },
-  statVal: { fontSize: 18, fontFamily: "Inter-Bold", marginTop: 4 },
-  statLabel: { fontSize: 10, fontFamily: "Inter-Medium" },
+  statVal: { fontSize: 18, marginTop: 4 },
+  statLabel: { fontSize: 10 },
 
   // Sections
   section: { marginTop: 28 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", paddingHorizontal: 20, marginBottom: 14 },
-  sectionTag: { fontSize: 10, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 2 },
-  sectionTitle: { fontSize: 20, fontFamily: "Inter-Bold" },
+  sectionTag: { fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 2 },
+  sectionTitle: { fontSize: 20 },
   seeAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  seeAllText: { fontSize: 11, fontFamily: "Inter-Bold" },
+  seeAllText: { fontSize: 11 },
   horizontalScroll: { paddingHorizontal: 20 },
 
   // Trip Cards
@@ -253,12 +319,12 @@ const styles = StyleSheet.create({
   tripCardContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16 },
   tripUserRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   tripUserAvatar: { width: 20, height: 20, borderRadius: 10, marginRight: 6, borderWidth: 1.5, borderColor: "#FFF" },
-  tripUserName: { color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Inter-Bold" },
-  tripCardName: { color: "#FFF", fontSize: 18, fontFamily: "Inter-Bold", marginBottom: 2 },
-  tripCardDest: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Inter-Medium", marginBottom: 8 },
+  tripUserName: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
+  tripCardName: { color: "#FFF", fontSize: 18, marginBottom: 2 },
+  tripCardDest: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginBottom: 8 },
   tripCardStats: { flexDirection: "row", gap: 12 },
   tripCardStat: { flexDirection: "row", alignItems: "center", gap: 4 },
-  tripCardStatText: { color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Inter-Bold" },
+  tripCardStatText: { color: "rgba(255,255,255,0.8)", fontSize: 10 },
 
   // Destinations
   destGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
@@ -266,22 +332,22 @@ const styles = StyleSheet.create({
   destImage: { width: "100%", height: "100%" },
   destOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.25)" },
   destContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 12 },
-  destCity: { color: "#FFF", fontSize: 16, fontFamily: "Inter-Bold" },
-  destCountry: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "Inter-Medium", marginBottom: 6 },
+  destCity: { color: "#FFF", fontSize: 16 },
+  destCountry: { color: "rgba(255,255,255,0.7)", fontSize: 10, marginBottom: 6 },
   destCostChip: { backgroundColor: "rgba(255,255,255,0.2)", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  destCostText: { color: "#FFF", fontSize: 10, fontFamily: "Inter-Bold" },
+  destCostText: { color: "#FFF", fontSize: 10 },
 
   // Features
   featureRow: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
   featureIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginRight: 14 },
   featureText: { flex: 1 },
-  featureTitle: { fontSize: 14, fontFamily: "Inter-Bold", marginBottom: 2 },
-  featureDesc: { fontSize: 11, fontFamily: "Inter-Medium", lineHeight: 16 },
+  featureTitle: { fontSize: 14, marginBottom: 2 },
+  featureDesc: { fontSize: 11, lineHeight: 16 },
 
   // Bottom CTA
   bottomCTA: { marginHorizontal: 20, padding: 24, borderRadius: 24, alignItems: "center", marginTop: 20 },
-  ctaTitle: { color: "#FFF", fontSize: 22, fontFamily: "Inter-Bold", marginBottom: 6 },
-  ctaSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter-Medium", textAlign: "center", marginBottom: 16, lineHeight: 18 },
+  ctaTitle: { color: "#FFF", fontSize: 22, marginBottom: 6 },
+  ctaSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginBottom: 16, lineHeight: 18 },
   ctaBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF", paddingHorizontal: 28, paddingVertical: 14, borderRadius: 16, gap: 6 },
-  ctaBtnText: { fontSize: 14, fontFamily: "Inter-Bold" },
+  ctaBtnText: { fontSize: 14 },
 });

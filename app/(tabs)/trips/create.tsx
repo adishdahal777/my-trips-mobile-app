@@ -1,8 +1,16 @@
-import Ionicons from "react-native-vector-icons/Ionicons";
+import {
+  BedDouble, Briefcase, Bus, Calendar, Car, Check, ChevronDown, ChevronLeft,
+  ChevronUp, Clock, Footprints, Heart, Home, Hotel, Image as ImageIcon,
+  Landmark, Loader, Map, MapPin, Mountain, PiggyBank, Plane, PlusCircle,
+  Ruler, Salad, Search, Sparkles, Sun, Tent, TrainFront, Turtle, Umbrella,
+  Users, Utensils, UtensilsCrossed, XCircle, Zap,
+} from "lucide-react-native";
 import { launchImageLibrary } from "react-native-image-picker";
+import Geolocation from "@react-native-community/geolocation";
+import DatePicker from "react-native-date-picker";
 import { router } from "../../../utils/navigation";
 import React, { useState } from "react";
-import { Alert, Animated, FlatList, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Animated, FlatList, Image, ImageBackground, KeyboardAvoidingView, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomSheet } from "../../../components/BottomSheet";
 import { OsmMapView } from "../../../components/OsmMapView";
@@ -14,6 +22,22 @@ import type { Trip, TripPreferences } from "../../../data/mockData";
 import { PREFERENCE_OPTIONS } from "../../../data/mockData";
 import { calculateRouteTime, calculateTotalDistance } from "../../../utils/calculateRoute";
 
+const PREF_ICONS: Record<string, any> = {
+  leisure: Sun, adventure: Mountain, cultural: Landmark, business: Briefcase, relaxation: Sparkles, romantic: Heart,
+  hotel: Hotel, airbnb: Home, hostel: BedDouble, camping: Tent, resort: Umbrella, friends: Users,
+  relaxed: Turtle, moderate: Footprints, packed: Zap,
+  local: UtensilsCrossed, finedining: Utensils, budget: PiggyBank, mixed: Salad,
+};
+
+function RequiredLabel({ children, color, dangerColor }: { children: string; color: string; dangerColor: string }) {
+  return (
+    <Text style={styles.inputLabel}>
+      <Text style={{ color }}>{children}</Text>
+      <Text style={{ color: dangerColor }}> *</Text>
+    </Text>
+  );
+}
+
 export default function CreateTrip() {
   const { colors } = useTheme();
   const { addTrip } = useTrips();
@@ -24,6 +48,23 @@ export default function CreateTrip() {
   const [searchRes, setSearchRes] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [customPhoto, setCustomPhoto] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [datePicker, setDatePicker] = useState<"start" | "end" | null>(null);
+
+  React.useEffect(() => {
+    (async () => {
+      if (Platform.OS === "android") {
+        const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) return;
+      }
+      Geolocation.getCurrentPosition(
+        (pos) => setCurrentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+    })();
+  }, []);
 
   const [draft, setDraft] = useState({
     name: "", type: "", transport: "flight",
@@ -99,7 +140,10 @@ export default function CreateTrip() {
 
   const pickImage = () => {
     launchImageLibrary({ mediaType: "photo", quality: 0.8 }, (r) => {
-      if (!r.didCancel && r.assets?.[0]?.uri) setDraft({ ...draft, coverPhoto: r.assets[0].uri });
+      if (!r.didCancel && r.assets?.[0]?.uri) {
+        setCustomPhoto(r.assets[0].uri);
+        setDraft({ ...draft, coverPhoto: r.assets[0].uri });
+      }
     });
   };
 
@@ -107,8 +151,32 @@ export default function CreateTrip() {
     setDraft({ ...draft, preferences: { ...draft.preferences, [key]: val } });
   };
 
+  const stepError = (s: number): string | null => {
+    if (s === 1) {
+      if (!draft.name.trim()) return "Trip name is required.";
+      if (!customPhoto) return "Please upload a cover photo.";
+    }
+    if (s === 2) {
+      if (!draft.transport) return "Please choose a transport method.";
+      if (draft.route.length === 0) return "Add at least one stop to your route.";
+    }
+    if (s === 3) {
+      if (!draft.budget.trim() || isNaN(parseFloat(draft.budget))) return "Please enter a budget.";
+      if (!draft.preferences.purpose) return "Please select a trip purpose.";
+      if (!draft.preferences.accommodation) return "Please select an accommodation.";
+      if (!draft.preferences.pace) return "Please select a travel pace.";
+      if (!draft.preferences.foodPriority) return "Please select a food priority.";
+    }
+    return null;
+  };
+
   const next = () => {
     if (isCreating) return;
+    const error = stepError(step);
+    if (error) {
+      Alert.alert("Almost there", error);
+      return;
+    }
     if (step < 4) {
       const n = step + 1;
       Animated.timing(progressAnim, { toValue: n * 0.25, duration: 300, useNativeDriver: false }).start();
@@ -164,7 +232,7 @@ export default function CreateTrip() {
         {["Basics", "Route", "Details", "Review"].map((label, i) => (
           <View key={label} style={styles.stepDot}>
             <View style={[styles.dot, { backgroundColor: step > i ? colors.accent : step === i + 1 ? colors.accent : colors.border }]}>
-              {step > i + 1 ? <Ionicons name="checkmark" size={10} color="#FFF" /> : <Text style={[styles.dotText, { color: step === i + 1 ? "#FFF" : colors.textMuted }]}>{i + 1}</Text>}
+              {step > i + 1 ? <Check size={10} color="#FFF" /> : <Text style={[styles.dotText, { color: step === i + 1 ? "#FFF" : colors.textMuted }]}>{i + 1}</Text>}
             </View>
             <Text style={[styles.stepLabel, { color: step === i + 1 ? colors.accent : colors.textMuted }]}>{label}</Text>
           </View>
@@ -172,14 +240,14 @@ export default function CreateTrip() {
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.flex1}>
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
 
           {/* ═══════ STEP 1: BASICS ═══════ */}
           {step === 1 && (
             <View>
               <Text style={[styles.stepTitle, { color: colors.text }]}>Let's start with the basics</Text>
 
-              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Trip Name</Text>
+              <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Trip Name</RequiredLabel>
               <TextInput value={draft.name} onChangeText={(t) => setDraft({ ...draft, name: t })} placeholder="e.g. Summer in Tokyo" placeholderTextColor={colors.inputPlaceholder} style={[styles.textInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]} />
 
               <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Who's going?</Text>
@@ -191,9 +259,16 @@ export default function CreateTrip() {
                 ))}
               </ScrollView>
 
+              <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Cover Photo</RequiredLabel>
               <Pressable onPress={pickImage} style={[styles.photoPicker, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                <Ionicons name="image-outline" size={28} color={colors.textMuted} />
-                <Text style={[styles.photoPickerText, { color: colors.textMuted }]}>Tap to upload cover photo</Text>
+                {customPhoto ? (
+                  <Image source={{ uri: customPhoto }} style={styles.photoPreview} />
+                ) : (
+                  <>
+                    <ImageIcon size={28} color={colors.textMuted} />
+                    <Text style={[styles.photoPickerText, { color: colors.textMuted }]}>Tap to upload cover photo</Text>
+                  </>
+                )}
               </Pressable>
             </View>
           )}
@@ -203,9 +278,11 @@ export default function CreateTrip() {
             <View>
               <Text style={[styles.stepTitle, { color: colors.text }]}>Map your route</Text>
 
+              <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Route (add at least one stop)</RequiredLabel>
+
               {/* Inline search bar */}
               <View style={[styles.inlineSearch, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Ionicons name="search" size={16} color={colors.textMuted} />
+                <Search size={16} color={colors.textMuted} />
                 <TextInput
                   value={searchQ}
                   onChangeText={handleSearch}
@@ -213,7 +290,7 @@ export default function CreateTrip() {
                   placeholderTextColor={colors.inputPlaceholder}
                   style={[styles.inlineSearchInput, { color: colors.text }]}
                 />
-                {searchLoading && <Ionicons name="sync-outline" size={16} color={colors.textMuted} />}
+                {searchLoading && <Loader size={16} color={colors.textMuted} />}
               </View>
 
               {/* Search results dropdown */}
@@ -226,13 +303,13 @@ export default function CreateTrip() {
                       style={[styles.searchResultRow, i < searchRes.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.borderLight }]}
                     >
                       <View style={[styles.resultIcon, { backgroundColor: colors.accentLight }]}>
-                        <Ionicons name="location" size={14} color={colors.accent} />
+                        <MapPin size={14} color={colors.accent} />
                       </View>
                       <View style={styles.flex1}>
                         <Text style={[styles.resultName, { color: colors.text }]} numberOfLines={1}>{r.display_name.split(",")[0]}</Text>
                         <Text style={[styles.resultAddr, { color: colors.textMuted }]} numberOfLines={1}>{r.display_name.split(",").slice(1, 3).join(",")}</Text>
                       </View>
-                      <Ionicons name="add-circle" size={20} color={colors.accent} />
+                      <PlusCircle size={20} color={colors.accent} />
                     </Pressable>
                   ))}
                 </View>
@@ -240,15 +317,15 @@ export default function CreateTrip() {
 
               {/* Map */}
               <View style={[styles.mapContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                {draft.route.length > 0 ? (
-                  <OsmMapView
-                    style={styles.flex1}
-                    strokeColor={colors.accent}
-                    stops={draft.route.map((s: any) => ({ id: s.id, lat: s.lat, lng: s.lng, color: s.color, label: s.label }))}
-                  />
-                ) : (
-                  <View style={styles.emptyMap}>
-                    <Ionicons name="map-outline" size={40} color={colors.textMuted} />
+                <OsmMapView
+                  style={styles.flex1}
+                  strokeColor={colors.accent}
+                  stops={draft.route.map((s: any) => ({ id: s.id, lat: s.lat, lng: s.lng, color: s.color, label: s.label }))}
+                  center={draft.route.length === 0 ? currentLocation ?? undefined : undefined}
+                />
+                {draft.route.length === 0 && !currentLocation && (
+                  <View style={styles.emptyMap} pointerEvents="none">
+                    <Map size={40} color={colors.textMuted} />
                     <Text style={[styles.emptyMapText, { color: colors.textMuted }]}>Search above to add stops</Text>
                   </View>
                 )}
@@ -277,13 +354,13 @@ export default function CreateTrip() {
                       </View>
                       <View style={styles.stopActions}>
                         <Pressable onPress={() => reorderStop(s.id, "up")} style={styles.stopActionBtn}>
-                          <Ionicons name="chevron-up" size={14} color={idx === 0 ? colors.border : colors.textMuted} />
+                          <ChevronUp size={14} color={idx === 0 ? colors.border : colors.textMuted} />
                         </Pressable>
                         <Pressable onPress={() => reorderStop(s.id, "down")} style={styles.stopActionBtn}>
-                          <Ionicons name="chevron-down" size={14} color={idx === draft.route.length - 1 ? colors.border : colors.textMuted} />
+                          <ChevronDown size={14} color={idx === draft.route.length - 1 ? colors.border : colors.textMuted} />
                         </Pressable>
                         <Pressable onPress={() => removeStop(s.id)} style={styles.stopActionBtn}>
-                          <Ionicons name="close-circle" size={16} color={colors.danger} />
+                          <XCircle size={16} color={colors.danger} />
                         </Pressable>
                       </View>
                     </View>
@@ -291,11 +368,11 @@ export default function CreateTrip() {
                   {draft.route.length > 1 && (
                     <View style={[styles.routeStats, { backgroundColor: colors.accentLight }]}>
                       <View style={styles.routeStatItem}>
-                        <Ionicons name="resize-outline" size={14} color={colors.accent} />
+                        <Ruler size={14} color={colors.accent} />
                         <Text style={[styles.routeStatValue, { color: colors.text }]}>{calculateTotalDistance(draft.route).toFixed(0)} km</Text>
                       </View>
                       <View style={styles.routeStatItem}>
-                        <Ionicons name="time-outline" size={14} color={colors.accent} />
+                        <Clock size={14} color={colors.accent} />
                         <Text style={[styles.routeStatValue, { color: colors.text }]}>{calculateRouteTime(draft.route, draft.transport)}</Text>
                       </View>
                     </View>
@@ -304,16 +381,18 @@ export default function CreateTrip() {
               )}
 
               {/* Transport */}
-              <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 16 }]}>Transport</Text>
+              <View style={{ marginTop: 16 }}>
+                <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Transport</RequiredLabel>
+              </View>
               <View style={styles.transportRow}>
                 {[
-                  { id: "flight", icon: "airplane", label: "Flight" },
-                  { id: "car", icon: "car", label: "Car" },
-                  { id: "train", icon: "train", label: "Train" },
-                  { id: "bus", icon: "bus", label: "Bus" },
+                  { id: "flight", icon: Plane, label: "Flight" },
+                  { id: "car", icon: Car, label: "Car" },
+                  { id: "train", icon: TrainFront, label: "Train" },
+                  { id: "bus", icon: Bus, label: "Bus" },
                 ].map((m) => (
                   <Pressable key={m.id} onPress={() => setDraft({ ...draft, transport: m.id })} style={[styles.transportBtn, { backgroundColor: draft.transport === m.id ? colors.accentLight : colors.surface, borderColor: draft.transport === m.id ? colors.accent : colors.border }]}>
-                    <Ionicons name={m.icon as any} size={22} color={draft.transport === m.id ? colors.accent : colors.textMuted} />
+                    <m.icon size={22} color={draft.transport === m.id ? colors.accent : colors.textMuted} />
                     <Text style={[styles.transportLabel, { color: draft.transport === m.id ? colors.accent : colors.textMuted }]}>{m.label}</Text>
                   </Pressable>
                 ))}
@@ -329,23 +408,51 @@ export default function CreateTrip() {
               <View style={styles.dateRow}>
                 <View style={styles.flex1}>
                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Start Date</Text>
-                  <TextInput value={draft.startDate} onChangeText={(t) => setDraft({ ...draft, startDate: t })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inputPlaceholder} style={[styles.textInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]} />
+                  <Pressable onPress={() => setDatePicker("start")} style={[styles.textInput, styles.dateBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={{ color: colors.text, fontSize: 16 }}>
+                      {new Date(draft.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </Text>
+                    <Calendar size={18} color={colors.textMuted} />
+                  </Pressable>
                 </View>
                 <View style={{ width: 10 }} />
                 <View style={styles.flex1}>
                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>End Date</Text>
-                  <TextInput value={draft.endDate} onChangeText={(t) => setDraft({ ...draft, endDate: t })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.inputPlaceholder} style={[styles.textInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]} />
+                  <Pressable onPress={() => setDatePicker("end")} style={[styles.textInput, styles.dateBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={{ color: colors.text, fontSize: 16 }}>
+                      {new Date(draft.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </Text>
+                    <Calendar size={18} color={colors.textMuted} />
+                  </Pressable>
                 </View>
               </View>
 
-              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Budget</Text>
+              <DatePicker
+                modal
+                open={datePicker !== null}
+                date={new Date(datePicker === "start" ? draft.startDate : draft.endDate)}
+                mode="date"
+                minimumDate={datePicker === "end" ? new Date(draft.startDate) : undefined}
+                onConfirm={(date) => {
+                  const iso = date.toISOString().split("T")[0];
+                  if (datePicker === "start") {
+                    setDraft({ ...draft, startDate: iso, endDate: iso > draft.endDate ? iso : draft.endDate });
+                  } else {
+                    setDraft({ ...draft, endDate: iso });
+                  }
+                  setDatePicker(null);
+                }}
+                onCancel={() => setDatePicker(null)}
+              />
+
+              <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Budget</RequiredLabel>
               <View style={[styles.budgetInput, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.budgetSign, { color: colors.textMuted }]}>$</Text>
+                <Text style={[styles.budgetSign, { color: colors.textMuted }]}>Rs</Text>
                 <TextInput value={draft.budget} onChangeText={(t) => setDraft({ ...draft, budget: t })} placeholder="2000" placeholderTextColor={colors.inputPlaceholder} keyboardType="numeric" style={[styles.budgetText, { color: colors.text }]} />
               </View>
 
               {/* ── MCQ: Trip Purpose ── */}
-              <Text style={[styles.mcqTitle, { color: colors.text }]}>Trip Purpose</Text>
+              <Text style={[styles.mcqTitle, { color: colors.text }]}>Trip Purpose <Text style={{ color: colors.danger }}>*</Text></Text>
               <Text style={[styles.mcqSubtitle, { color: colors.textMuted }]}>What's the main goal of this trip?</Text>
               <View style={styles.mcqGrid}>
                 {PREFERENCE_OPTIONS.purpose.map((opt) => (
@@ -360,11 +467,11 @@ export default function CreateTrip() {
                       },
                     ]}
                   >
-                    <Text style={styles.mcqIcon}>{opt.icon}</Text>
+                    {React.createElement(PREF_ICONS[opt.id], { size: 18, color: draft.preferences.purpose === opt.id ? colors.accent : colors.textMuted, style: styles.mcqIcon })}
                     <Text style={[styles.mcqLabel, { color: draft.preferences.purpose === opt.id ? colors.accent : colors.textSecondary }]}>{opt.label}</Text>
                     {draft.preferences.purpose === opt.id && (
                       <View style={[styles.mcqCheck, { backgroundColor: colors.accent }]}>
-                        <Ionicons name="checkmark" size={10} color="#FFF" />
+                        <Check size={10} color="#FFF" />
                       </View>
                     )}
                   </Pressable>
@@ -372,7 +479,7 @@ export default function CreateTrip() {
               </View>
 
               {/* ── MCQ: Accommodation ── */}
-              <Text style={[styles.mcqTitle, { color: colors.text }]}>Accommodation</Text>
+              <Text style={[styles.mcqTitle, { color: colors.text }]}>Accommodation <Text style={{ color: colors.danger }}>*</Text></Text>
               <Text style={[styles.mcqSubtitle, { color: colors.textMuted }]}>Where will you stay?</Text>
               <View style={styles.mcqGrid}>
                 {PREFERENCE_OPTIONS.accommodation.map((opt) => (
@@ -387,11 +494,11 @@ export default function CreateTrip() {
                       },
                     ]}
                   >
-                    <Text style={styles.mcqIcon}>{opt.icon}</Text>
+                    {React.createElement(PREF_ICONS[opt.id], { size: 18, color: draft.preferences.accommodation === opt.id ? colors.accent : colors.textMuted, style: styles.mcqIcon })}
                     <Text style={[styles.mcqLabel, { color: draft.preferences.accommodation === opt.id ? colors.accent : colors.textSecondary }]}>{opt.label}</Text>
                     {draft.preferences.accommodation === opt.id && (
                       <View style={[styles.mcqCheck, { backgroundColor: colors.accent }]}>
-                        <Ionicons name="checkmark" size={10} color="#FFF" />
+                        <Check size={10} color="#FFF" />
                       </View>
                     )}
                   </Pressable>
@@ -399,7 +506,7 @@ export default function CreateTrip() {
               </View>
 
               {/* ── MCQ: Pace ── */}
-              <Text style={[styles.mcqTitle, { color: colors.text }]}>Travel Pace</Text>
+              <Text style={[styles.mcqTitle, { color: colors.text }]}>Travel Pace <Text style={{ color: colors.danger }}>*</Text></Text>
               <Text style={[styles.mcqSubtitle, { color: colors.textMuted }]}>How packed is your schedule?</Text>
               <View style={styles.paceRow}>
                 {PREFERENCE_OPTIONS.pace.map((opt) => (
@@ -414,14 +521,14 @@ export default function CreateTrip() {
                       },
                     ]}
                   >
-                    <Text style={styles.paceIcon}>{opt.icon}</Text>
+                    {React.createElement(PREF_ICONS[opt.id], { size: 22, color: draft.preferences.pace === opt.id ? colors.accent : colors.textMuted, style: styles.paceIcon })}
                     <Text style={[styles.paceLabel, { color: draft.preferences.pace === opt.id ? colors.accent : colors.textSecondary }]}>{opt.label}</Text>
                   </Pressable>
                 ))}
               </View>
 
               {/* ── MCQ: Food Priority ── */}
-              <Text style={[styles.mcqTitle, { color: colors.text }]}>Food Priority</Text>
+              <Text style={[styles.mcqTitle, { color: colors.text }]}>Food Priority <Text style={{ color: colors.danger }}>*</Text></Text>
               <Text style={[styles.mcqSubtitle, { color: colors.textMuted }]}>What's your dining style?</Text>
               <View style={styles.mcqGrid}>
                 {PREFERENCE_OPTIONS.foodPriority.map((opt) => (
@@ -436,11 +543,11 @@ export default function CreateTrip() {
                       },
                     ]}
                   >
-                    <Text style={styles.mcqIcon}>{opt.icon}</Text>
+                    {React.createElement(PREF_ICONS[opt.id], { size: 18, color: draft.preferences.foodPriority === opt.id ? colors.accent : colors.textMuted, style: styles.mcqIcon })}
                     <Text style={[styles.mcqLabel, { color: draft.preferences.foodPriority === opt.id ? colors.accent : colors.textSecondary }]}>{opt.label}</Text>
                     {draft.preferences.foodPriority === opt.id && (
                       <View style={[styles.mcqCheck, { backgroundColor: colors.accent }]}>
-                        <Ionicons name="checkmark" size={10} color="#FFF" />
+                        <Check size={10} color="#FFF" />
                       </View>
                     )}
                   </Pressable>
@@ -483,7 +590,7 @@ export default function CreateTrip() {
           <View style={styles.navRow}>
             {step > 1 && (
               <Pressable onPress={back} style={[styles.backButton, { borderColor: colors.border }]}>
-                <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+                <ChevronLeft size={18} color={colors.textSecondary} />
                 <Text style={[styles.backButtonText, { color: colors.textSecondary }]}>Back</Text>
               </Pressable>
             )}
@@ -509,80 +616,82 @@ const styles = StyleSheet.create({
   stepIndicator: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 24, paddingVertical: 16 },
   stepDot: { alignItems: "center" },
   dot: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  dotText: { fontSize: 10, fontFamily: "Inter-Bold" },
-  stepLabel: { fontSize: 9, fontFamily: "Inter-Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  dotText: { fontSize: 10, fontWeight: "700" },
+  stepLabel: { fontSize: 9, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
   scrollContent: { flex: 1, paddingHorizontal: 20 },
-  stepTitle: { fontSize: 24, fontFamily: "Inter-Bold", marginBottom: 20 },
-  inputLabel: { fontSize: 10, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 },
-  textInput: { fontSize: 16, fontFamily: "Inter-Medium", padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
-  typeChip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, marginRight: 8, borderWidth: 1 },
-  typeText: { fontSize: 13, fontFamily: "Inter-Bold" },
-  photoPicker: { width: "100%", height: 140, borderRadius: 16, borderWidth: 1.5, borderStyle: "dashed", alignItems: "center", justifyContent: "center" },
-  photoPickerText: { fontSize: 12, fontFamily: "Inter-Medium", marginTop: 8 },
+  stepTitle: { fontSize: 24, fontWeight: "700", marginBottom: 20 },
+  inputLabel: { fontSize: 10, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 },
+  textInput: { fontSize: 16, padding: 14, borderRadius: 6, borderWidth: 1, marginBottom: 16 },
+  dateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  typeChip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, marginRight: 8, borderWidth: 1 },
+  typeText: { fontSize: 13, fontWeight: "600" },
+  photoPicker: { width: "100%", height: 140, borderRadius: 8, borderWidth: 1.5, borderStyle: "dashed", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  photoPickerText: { fontSize: 12, marginTop: 8 },
+  photoPreview: { width: "100%", height: "100%" },
 
   // Step 2: Route
-  inlineSearch: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, borderWidth: 1, marginBottom: 8 },
-  inlineSearchInput: { flex: 1, marginLeft: 10, fontSize: 14, fontFamily: "Inter-Medium" },
-  searchDropdown: { borderRadius: 14, borderWidth: 1, marginBottom: 12, overflow: "hidden" },
+  inlineSearch: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 11, borderRadius: 6, borderWidth: 1, marginBottom: 8 },
+  inlineSearchInput: { flex: 1, marginLeft: 10, fontSize: 14 },
+  searchDropdown: { borderRadius: 6, borderWidth: 1, marginBottom: 12, overflow: "hidden" },
   searchResultRow: { flexDirection: "row", alignItems: "center", padding: 12 },
-  resultIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", marginRight: 10 },
-  resultName: { fontSize: 13, fontFamily: "Inter-Bold" },
-  resultAddr: { fontSize: 10, fontFamily: "Inter-Medium" },
-  mapContainer: { height: 220, borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 12 },
-  emptyMap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  emptyMapText: { fontSize: 12, fontFamily: "Inter-Medium", marginTop: 8 },
-  stopsCard: { borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 4 },
+  resultIcon: { width: 30, height: 30, borderRadius: 6, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  resultName: { fontSize: 13, fontWeight: "600" },
+  resultAddr: { fontSize: 10 },
+  mapContainer: { height: 220, borderRadius: 8, overflow: "hidden", borderWidth: 1, marginBottom: 12 },
+  emptyMap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  emptyMapText: { fontSize: 12, marginTop: 8 },
+  stopsCard: { borderRadius: 8, borderWidth: 1, padding: 14, marginBottom: 4 },
   stopsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  stopsTitle: { fontSize: 15, fontFamily: "Inter-Bold" },
-  stopsCount: { fontSize: 11, fontFamily: "Inter-Medium" },
+  stopsTitle: { fontSize: 15, fontWeight: "700" },
+  stopsCount: { fontSize: 11 },
   stopRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
   stopLeft: { alignItems: "center", width: 30, marginRight: 10 },
   stopMarker: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  stopMarkerLabel: { color: "#FFF", fontSize: 9, fontFamily: "Inter-Bold" },
+  stopMarkerLabel: { color: "#FFF", fontSize: 9, fontWeight: "700" },
   stopLine: { width: 2, height: 20, marginTop: 4 },
   stopCenter: { flex: 1 },
-  stopName: { fontSize: 13, fontFamily: "Inter-Bold" },
-  stopType: { fontSize: 10, fontFamily: "Inter-Medium" },
+  stopName: { fontSize: 13, fontWeight: "600" },
+  stopType: { fontSize: 10 },
   stopActions: { flexDirection: "row", alignItems: "center", gap: 4 },
   stopActionBtn: { padding: 4 },
-  routeStats: { flexDirection: "row", justifyContent: "space-around", padding: 12, borderRadius: 12, marginTop: 8 },
+  routeStats: { flexDirection: "row", justifyContent: "space-around", padding: 12, borderRadius: 6, marginTop: 8 },
   routeStatItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  routeStatValue: { fontSize: 13, fontFamily: "Inter-Bold" },
+  routeStatValue: { fontSize: 13, fontWeight: "700" },
   transportRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  transportBtn: { width: "23%", borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1, paddingVertical: 14 },
-  transportLabel: { fontSize: 9, fontFamily: "Inter-Medium", marginTop: 4, textTransform: "uppercase" },
+  transportBtn: { width: "23%", borderRadius: 6, alignItems: "center", justifyContent: "center", borderWidth: 1, paddingVertical: 14 },
+  transportLabel: { fontSize: 9, marginTop: 4, textTransform: "uppercase" },
 
   // Step 3: MCQ
-  mcqTitle: { fontSize: 16, fontFamily: "Inter-Bold", marginTop: 16, marginBottom: 2 },
-  mcqSubtitle: { fontSize: 11, fontFamily: "Inter-Medium", marginBottom: 12 },
+  mcqTitle: { fontSize: 16, fontWeight: "700", marginTop: 16, marginBottom: 2 },
+  mcqSubtitle: { fontSize: 11, marginBottom: 12 },
   mcqGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 4 },
-  mcqOption: { width: "48%", flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 8, position: "relative" },
-  mcqIcon: { fontSize: 18, marginRight: 8 },
-  mcqLabel: { fontSize: 12, fontFamily: "Inter-Bold", flex: 1 },
+  mcqOption: { width: "48%", flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 6, borderWidth: 1, marginBottom: 8, position: "relative" },
+  mcqIcon: { marginRight: 8 },
+  mcqLabel: { fontSize: 12, fontWeight: "600", flex: 1 },
   mcqCheck: { position: "absolute", top: 6, right: 6, width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   paceRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  paceOption: { flex: 1, alignItems: "center", paddingVertical: 16, borderRadius: 14, borderWidth: 1, marginHorizontal: 4 },
-  paceIcon: { fontSize: 24, marginBottom: 4 },
-  paceLabel: { fontSize: 11, fontFamily: "Inter-Bold" },
+  paceOption: { flex: 1, alignItems: "center", paddingVertical: 16, borderRadius: 6, borderWidth: 1, marginHorizontal: 4 },
+  paceIcon: { marginBottom: 4 },
+  paceLabel: { fontSize: 11, fontWeight: "700" },
 
   // Step 3: Budget
   dateRow: { flexDirection: "row", marginBottom: 4 },
-  budgetInput: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, marginBottom: 8 },
-  budgetSign: { fontSize: 20, fontFamily: "Inter-Bold" },
-  budgetText: { flex: 1, fontSize: 20, fontFamily: "Inter-Bold", padding: 14, marginLeft: 8 },
+  budgetInput: { flexDirection: "row", alignItems: "center", borderRadius: 6, borderWidth: 1, paddingHorizontal: 14, marginBottom: 8 },
+  budgetSign: { fontSize: 20, fontWeight: "700" },
+  budgetText: { flex: 1, fontSize: 20, fontWeight: "700", padding: 14, marginLeft: 8 },
 
   // Step 4: Review
-  reviewCard: { borderRadius: 16, overflow: "hidden", borderWidth: 1, marginBottom: 8 },
+  reviewCard: { borderRadius: 8, overflow: "hidden", borderWidth: 1, marginBottom: 8 },
   reviewImage: { height: 120, justifyContent: "flex-end", padding: 16 },
   reviewOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.35)" },
-  reviewName: { color: "#FFF", fontSize: 22, fontFamily: "Inter-Bold", zIndex: 1 },
+  reviewName: { color: "#FFF", fontSize: 22, fontWeight: "700", zIndex: 1 },
   reviewInfo: { padding: 14 },
   reviewRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1 },
-  reviewLabel: { fontSize: 13, fontFamily: "Inter-Medium" },
-  reviewValue: { fontSize: 13, fontFamily: "Inter-Bold" },
+  reviewLabel: { fontSize: 13 },
+  reviewValue: { fontSize: 13, fontWeight: "700" },
 
   // Nav
   navRow: { flexDirection: "row", alignItems: "center", marginTop: 16, gap: 10 },
-  backButton: { flexDirection: "row", alignItems: "center", paddingVertical: 15, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1 },
-  backButtonText: { fontSize: 14, fontFamily: "Inter-Medium", marginLeft: 4 },
+  backButton: { flexDirection: "row", alignItems: "center", paddingVertical: 15, paddingHorizontal: 16, borderRadius: 6, borderWidth: 1 },
+  backButtonText: { fontSize: 14, fontWeight: "600", marginLeft: 4 },
 });

@@ -31,11 +31,6 @@ module.exports = {
                 coral: "#F97316",
                 muted: "#64748b",
             },
-            fontFamily: {
-                heading: ["Inter-Bold"],
-                body: ["Inter-Regular"],
-                label: ["Inter-Medium"],
-            },
         },
     },
     plugins: [],

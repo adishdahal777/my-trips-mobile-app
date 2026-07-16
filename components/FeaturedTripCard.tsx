@@ -1,6 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SkeletonImage } from "./SkeletonImage";
 import type { Trip } from "../data/mockData";
 import { useTheme } from "../context/ThemeContext";
 import { STATUS_COLORS, STATUS_COLORS_DARK } from "../constants/theme";
@@ -43,7 +44,7 @@ export function FeaturedTripCard({ trip }: FeaturedTripCardProps) {
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       {/* Cover image */}
-      <Image source={{ uri: trip.coverPhoto }} style={styles.coverImage} />
+      <SkeletonImage source={{ uri: trip.coverPhoto }} style={styles.coverImage} />
 
       {/* Content area */}
       <View style={styles.content}>
@@ -110,7 +111,7 @@ export function FeaturedTripCard({ trip }: FeaturedTripCardProps) {
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
   },
@@ -121,22 +122,22 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
   titleWrap: { flex: 1, marginRight: 10 },
-  tripName: { fontSize: 18, fontFamily: "Inter-Bold", marginBottom: 2 },
-  destination: { fontSize: 12, fontFamily: "Inter-Medium" },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: "flex-start" },
-  statusText: { fontSize: 10, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  tripName: { fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  destination: { fontSize: 12 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, alignSelf: "flex-start" },
+  statusText: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   dateRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
-  dateText: { fontSize: 11, fontFamily: "Inter-Medium", marginLeft: 6 },
+  dateText: { fontSize: 11, marginLeft: 6 },
   budgetSection: { marginBottom: 14 },
   budgetHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  budgetLabel: { fontSize: 12, fontFamily: "Inter-Medium" },
-  budgetValue: { fontSize: 11, fontFamily: "Inter-Bold" },
+  budgetLabel: { fontSize: 12 },
+  budgetValue: { fontSize: 11, fontWeight: "600" },
   progressTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 2 },
   actionsRow: { flexDirection: "row", justifyContent: "space-between", paddingTop: 14, borderTopWidth: 1, marginBottom: 10 },
   actionItem: { alignItems: "center", flex: 1 },
-  actionIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  actionLabel: { fontSize: 9, fontFamily: "Inter-Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  actionIcon: { width: 36, height: 36, borderRadius: 6, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  actionLabel: { fontSize: 9, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
   countsRow: { alignItems: "center", paddingTop: 6 },
-  countText: { fontSize: 10, fontFamily: "Inter-Medium" },
+  countText: { fontSize: 10 },
 });

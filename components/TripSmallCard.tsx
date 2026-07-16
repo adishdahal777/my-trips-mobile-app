@@ -1,6 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SkeletonImage } from "./SkeletonImage";
 import type { Trip } from "../data/mockData";
 import { useTheme } from "../context/ThemeContext";
 import { STATUS_COLORS, STATUS_COLORS_DARK } from "../constants/theme";
@@ -41,7 +42,7 @@ export function TripSmallCard({ trip, isAddButton }: TripSmallCardProps) {
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       {/* Image */}
-      <Image source={{ uri: trip.coverPhoto }} style={styles.image} />
+      <SkeletonImage source={{ uri: trip.coverPhoto }} style={styles.image} />
       
       {/* Status pill on image */}
       <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   card: {
     width: 156,
     height: 230,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
     overflow: "hidden",
     marginRight: 12,
@@ -103,13 +104,13 @@ const styles = StyleSheet.create({
   addIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
   },
-  addText: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  addSubText: { fontSize: 10, fontFamily: "Inter-Medium" },
+  addText: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
+  addSubText: { fontSize: 10 },
   image: { width: "100%", height: 110 },
   statusPill: {
     position: "absolute",
@@ -117,21 +118,21 @@ const styles = StyleSheet.create({
     right: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 999,
   },
-  statusLabel: { fontSize: 8, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  statusLabel: { fontSize: 8, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   info: { padding: 10, flex: 1, justifyContent: "space-between" },
-  name: { fontSize: 13, fontFamily: "Inter-Bold", marginBottom: 2 },
-  dest: { fontSize: 10, fontFamily: "Inter-Medium", marginBottom: 2 },
-  dates: { fontSize: 9, fontFamily: "Inter-Medium", marginBottom: 6 },
+  name: { fontSize: 13, fontWeight: "700", marginBottom: 2 },
+  dest: { fontSize: 10, marginBottom: 2 },
+  dates: { fontSize: 9, marginBottom: 6 },
   expenseChip: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     alignSelf: "flex-start",
   },
-  expenseText: { fontSize: 10, fontFamily: "Inter-Bold", marginLeft: 4 },
+  expenseText: { fontSize: 10, fontWeight: "700", marginLeft: 4 },
 });

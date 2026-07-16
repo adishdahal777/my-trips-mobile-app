@@ -1,9 +1,11 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { Flame } from "lucide-react-native";
 import { router } from "../utils/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../components/FeedTripCard";
+import { SkeletonImage } from "../components/SkeletonImage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import type { Trip } from "../data/mockData";
@@ -94,14 +96,17 @@ export default function PublicFeed() {
         {/* Featured Hero */}
         {featuredTrip && (
           <View style={styles.featuredSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>🔥 Featured Trip</Text>
+            <View style={styles.sectionTitleRow}>
+              <Flame size={16} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text, paddingHorizontal: 0, marginBottom: 0 }]}>Featured Trip</Text>
+            </View>
             <Pressable onPress={() => router.push("PublicTrip", { id: featuredTrip.id })}>
               <View style={[styles.featuredCard, { borderColor: colors.border }]}>
-                <Image source={{ uri: featuredTrip.coverPhoto }} style={styles.featuredImage} />
+                <SkeletonImage source={{ uri: featuredTrip.coverPhoto }} style={styles.featuredImage} />
                 <View style={styles.featuredGradient} />
                 <View style={styles.featuredContent}>
                   <View style={styles.featuredUserRow}>
-                    <Image source={{ uri: featuredTrip.user?.avatar }} style={styles.featuredAvatar} />
+                    <SkeletonImage source={{ uri: featuredTrip.user?.avatar }} style={styles.featuredAvatar} />
                     <Text style={styles.featuredUserName}>{featuredTrip.user?.name}</Text>
                   </View>
                   <Text style={styles.featuredName}>{featuredTrip.name}</Text>
@@ -135,7 +140,7 @@ export default function PublicFeed() {
               .map((t) => (
                 <View key={t.user?.id || t.id} style={styles.travelerItem}>
                   <View style={[styles.travelerRing, { borderColor: t.status === "ongoing" ? colors.success : colors.border }]}>
-                    <Image source={{ uri: t.user?.avatar }} style={styles.travelerAvatar} />
+                    <SkeletonImage source={{ uri: t.user?.avatar }} style={styles.travelerAvatar} />
                   </View>
                   <Text style={[styles.travelerName, { color: colors.textSecondary }]} numberOfLines={1}>
                     {t.user?.name?.split(" ")[0]}
@@ -191,19 +196,20 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, marginBottom: 16 },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   backBtn: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  headerTag: { fontSize: 11, fontFamily: "Inter-Bold", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 2 },
-  headerTitle: { fontSize: 28, fontFamily: "Inter-Bold" },
+  headerTag: { fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 2 },
+  headerTitle: { fontSize: 28 },
 
   // Sign-up banner
   signUpBanner: { marginHorizontal: 20, borderRadius: 16, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   bannerContent: { flexDirection: "row", alignItems: "center", flex: 1, gap: 10 },
   bannerText: { flex: 1 },
-  bannerTitle: { color: "#FFF", fontSize: 14, fontFamily: "Inter-Bold" },
-  bannerSub: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontFamily: "Inter-Medium" },
+  bannerTitle: { color: "#FFF", fontSize: 14 },
+  bannerSub: { color: "rgba(255,255,255,0.8)", fontSize: 11 },
   bannerBtn: { backgroundColor: "#FFF", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  bannerBtnText: { fontSize: 12, fontFamily: "Inter-Bold" },
+  bannerBtnText: { fontSize: 12 },
 
-  sectionTitle: { fontSize: 16, fontFamily: "Inter-Bold", paddingHorizontal: 20, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, paddingHorizontal: 20, marginBottom: 12 },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 20, marginBottom: 12 },
 
   // Featured
   featuredSection: { marginBottom: 20 },
@@ -213,12 +219,12 @@ const styles = StyleSheet.create({
   featuredContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 16 },
   featuredUserRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   featuredAvatar: { width: 22, height: 22, borderRadius: 11, marginRight: 6, borderWidth: 1.5, borderColor: "#FFF" },
-  featuredUserName: { color: "rgba(255,255,255,0.9)", fontSize: 11, fontFamily: "Inter-Bold" },
-  featuredName: { color: "#FFF", fontSize: 22, fontFamily: "Inter-Bold", marginBottom: 2 },
-  featuredDest: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontFamily: "Inter-Medium", marginBottom: 8 },
+  featuredUserName: { color: "rgba(255,255,255,0.9)", fontSize: 11 },
+  featuredName: { color: "#FFF", fontSize: 22, marginBottom: 2 },
+  featuredDest: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginBottom: 8 },
   featuredStats: { flexDirection: "row", gap: 12 },
   featuredStat: { flexDirection: "row", alignItems: "center", gap: 4 },
-  featuredStatText: { color: "rgba(255,255,255,0.9)", fontSize: 11, fontFamily: "Inter-Bold" },
+  featuredStatText: { color: "rgba(255,255,255,0.9)", fontSize: 11 },
 
   // Travelers
   travelersRow: { marginBottom: 16 },
@@ -226,17 +232,17 @@ const styles = StyleSheet.create({
   travelerItem: { alignItems: "center", marginRight: 14, width: 56 },
   travelerRing: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, padding: 2, marginBottom: 4 },
   travelerAvatar: { width: "100%", height: "100%", borderRadius: 22 },
-  travelerName: { fontSize: 10, fontFamily: "Inter-Medium" },
+  travelerName: { fontSize: 10 },
 
   // Filters
   filterRow: { marginBottom: 16 },
   filterScroll: { paddingHorizontal: 20 },
   filterChip: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, marginRight: 8, borderWidth: 1 },
-  filterText: { fontSize: 12, fontFamily: "Inter-Bold" },
+  filterText: { fontSize: 12 },
 
   // Feed
   feed: { paddingHorizontal: 16 },
   emptyFeed: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 16, fontFamily: "Inter-Bold", marginTop: 12, marginBottom: 4 },
-  emptySub: { fontSize: 12, fontFamily: "Inter-Medium" },
+  emptyTitle: { fontSize: 16, marginTop: 12, marginBottom: 4 },
+  emptySub: { fontSize: 12 },
 });
