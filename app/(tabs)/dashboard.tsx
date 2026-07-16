@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DestinationCard } from "../../components/DestinationCard";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { ExpenseFeedItem } from "../../components/ExpenseFeedItem";
 import { FeaturedTripCard } from "../../components/FeaturedTripCard";
 import { HomeHeader } from "../../components/HomeHeader";
@@ -22,21 +23,33 @@ import type { Recommendation } from "../../utils/recommend";
 export default function Dashboard() {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const { trips } = useTrips();
+  const { trips, refreshTrips } = useTrips();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const { unreadCount } = useNotifications();
+  const [refreshing, setRefreshing] = useState(false);
+  const { unreadCount, refresh: refreshUnreadCount } = useNotifications();
 
-  useEffect(() => {
+  const loadExtras = () => {
     apiFetch("/recommendations?limit=6")
       .then((res) => setRecommendations(res.data))
       .catch(() => setRecommendations([]));
     apiFetch("/destinations")
       .then((res) => setDestinations(res.data))
       .catch(() => setDestinations([]));
+  };
+
+  useEffect(() => {
+    loadExtras();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refreshTrips(), refreshUnreadCount()]);
+    loadExtras();
+    setRefreshing(false);
+  };
 
   const recommendedDestinations = useMemo(
     () => getRecommendedDestinations(destinations, trips, 8),
@@ -60,10 +73,12 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
+      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scroll}
         stickyHeaderIndices={isSearching ? [0] : []}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Zone 1: Header */}
         {!isSearching ? (

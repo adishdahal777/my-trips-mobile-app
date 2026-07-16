@@ -2,6 +2,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import React, { useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../../../components/PlaneRefreshControl";
 import { TripCard } from "../../../components/TripCard";
 import { useTheme } from "../../../context/ThemeContext";
 import { useTrips } from "../../../context/TripContext";
@@ -10,9 +11,16 @@ const FILTERS = ["All", "Ongoing", "Upcoming", "Completed"];
 
 export default function TripsIndex() {
   const { colors } = useTheme();
-  const { trips } = useTrips();
+  const { trips, refreshTrips } = useTrips();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshTrips();
+    setRefreshing(false);
+  };
 
   const filteredTrips = trips.filter((t) => {
     const matchSearch =
@@ -71,11 +79,13 @@ export default function TripsIndex() {
         </ScrollView>
       </View>
 
+      <PlaneRefreshBanner visible={refreshing} />
       <FlatList
         data={filteredTrips}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 20, paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => <TripCard trip={item} />}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>

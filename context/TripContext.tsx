@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 interface TripCtx {
   trips: Trip[];
   isLoading: boolean;
+  refreshTrips: () => Promise<void>;
   getTripById: (id: string) => Trip | undefined;
   addTrip: (trip: Trip) => Promise<void>;
   updateTrip: (id: string, data: Partial<Trip>) => Promise<void>;
@@ -31,21 +32,23 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const refreshTrips = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiFetch("/trips");
+      setTrips(res.data);
+    } catch {
+      setTrips([]);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       setTrips([]);
       return;
     }
-    (async () => {
-      setIsLoading(true);
-      try {
-        const res = await apiFetch("/trips");
-        setTrips(res.data);
-      } catch {
-        setTrips([]);
-      }
-      setIsLoading(false);
-    })();
+    refreshTrips();
   }, [isAuthenticated]);
 
   const replaceTrip = (updated: Trip) => setTrips((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
@@ -146,7 +149,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <TripContext.Provider value={{
-      trips, isLoading, getTripById, addTrip, updateTrip, deleteTrip,
+      trips, isLoading, refreshTrips, getTripById, addTrip, updateTrip, deleteTrip,
       addExpense, deleteExpense, toggleExpensePrivacy, addPhoto, deletePhoto, togglePhotoPrivacy,
       addNote, updateNote, deleteNote, toggleNotePrivacy,
       updateTripVisibility, updateTripPrivacy,

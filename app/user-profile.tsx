@@ -1,11 +1,12 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import { useRoute } from "@react-navigation/native";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../components/FeedTripCard";
 import { NoteCard } from "../components/NoteCard";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { ProfileShareSheet } from "../components/ProfileShareSheet";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonImage } from "../components/SkeletonImage";
@@ -32,11 +33,29 @@ export default function UserProfile() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [followBusy, setFollowBusy] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    apiFetch(`/users/${userId}`).then((res) => setProfile(res.data)).catch(() => setProfile(null));
-    apiFetch(`/feed?user=${userId}`).then((res) => setTrips(res.data)).catch(() => setTrips([]));
+  const load = useCallback(() => {
+    return Promise.all([
+      apiFetch(`/users/${userId}`).then((res) => setProfile(res.data)).catch(() => setProfile(null)),
+      apiFetch(`/feed?user=${userId}`).then((res) => setTrips(res.data)).catch(() => setTrips([])),
+    ]);
   }, [userId]);
+
+  // Re-fetch on every focus, not just mount — router.push resolves to `navigate`, which
+  // re-focuses an already-mounted screen instance (same userId) instead of remounting it,
+  // so a mount-only effect would keep showing stale follow state on repeat visits.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const currency = trips[0]?.currency ?? "";
   const totalNotes = trips.reduce((sum, t) => sum + (t.notes?.length || 0), 0);
@@ -87,7 +106,12 @@ export default function UserProfile() {
         rightIcon="share-outline"
         onRightPress={() => setShareVisible(true)}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <PlaneRefreshBanner visible={refreshing} />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.header}>
           <SkeletonImage source={{ uri: profile.avatar }} style={styles.avatar} />
           <Text style={[styles.name, { color: colors.text }]}>{profile.name}</Text>

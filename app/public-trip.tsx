@@ -1,10 +1,11 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { router } from "../utils/navigation";
-import { useRoute } from "@react-navigation/native";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OsmMapView } from "../components/OsmMapView";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { ShareSheet } from "../components/ShareSheet";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -24,17 +25,28 @@ export default function PublicTrip() {
 
   const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
   const [shareVisible, setShareVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await apiFetch(`/public-trips/${id}`);
-        setTrip(res.data);
-      } catch {
-        setTrip(null);
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/public-trips/${id}`);
+      setTrip(res.data);
+    } catch {
+      setTrip(null);
+    }
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   if (trip === undefined) {
     return (
@@ -71,7 +83,11 @@ export default function PublicTrip() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <PlaneRefreshBanner visible={refreshing} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* Hero */}
         <ImageBackground source={{ uri: trip.coverPhoto }} style={styles.hero}>
           <View style={styles.heroOverlay} />

@@ -3,6 +3,7 @@ import { launchImageLibrary } from "react-native-image-picker";
 import React from "react";
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { router } from "../../utils/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -13,17 +14,28 @@ import { apiFetch, uploadAvatar } from "../../services/api";
 export default function Profile() {
   const { user, logout, updateUser } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { trips } = useTrips();
+  const { trips, refreshTrips } = useTrips();
   const stats = React.useMemo(() => calculateUserStats(trips), [trips]);
   const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
   const [followCounts, setFollowCounts] = React.useState({ followers: 0, following: 0 });
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!user) return;
-    apiFetch(`/users/${user.id}`)
+  const loadFollowCounts = React.useCallback(() => {
+    if (!user) return Promise.resolve();
+    return apiFetch(`/users/${user.id}`)
       .then((res) => setFollowCounts({ followers: res.data?.followersCount ?? 0, following: res.data?.followingCount ?? 0 }))
       .catch(() => {});
   }, [user?.id]);
+
+  React.useEffect(() => {
+    loadFollowCounts();
+  }, [loadFollowCounts]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refreshTrips(), loadFollowCounts()]);
+    setRefreshing(false);
+  };
 
   if (!user) return null;
 
@@ -67,7 +79,12 @@ export default function Profile() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.surface }]}>
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+      <PlaneRefreshBanner visible={refreshing} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* Profile Header */}
         <View style={[styles.profileHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.avatarWrap}>

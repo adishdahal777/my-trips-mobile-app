@@ -1,6 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonImage } from "../components/SkeletonImage";
@@ -98,11 +99,12 @@ export default function Notifications() {
         </Pressable>
       )}
 
+      <PlaneRefreshBanner visible={refreshing} />
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+        refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => (
           <Pressable
             onPress={() => handlePress(item)}
