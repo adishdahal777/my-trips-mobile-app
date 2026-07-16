@@ -7,10 +7,11 @@ import { useTheme } from "../context/ThemeContext";
 interface HomeHeaderProps {
   user: { name: string; avatar: string };
   onSearchPress: () => void;
+  onNotifPress?: () => void;
   notifCount?: number;
 }
 
-export function HomeHeader({ user, onSearchPress, notifCount = 0 }: HomeHeaderProps) {
+export function HomeHeader({ user, onSearchPress, onNotifPress, notifCount = 0 }: HomeHeaderProps) {
   const { colors } = useTheme();
   const [greeting, setGreeting] = useState("Good morning");
 
@@ -44,7 +45,7 @@ export function HomeHeader({ user, onSearchPress, notifCount = 0 }: HomeHeaderPr
           <Pressable onPress={onSearchPress} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
             <Ionicons name="search" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+          <Pressable onPress={onNotifPress} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
             <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
             {notifCount > 0 && <View style={styles.badge} />}
           </Pressable>

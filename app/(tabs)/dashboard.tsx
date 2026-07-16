@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   useEffect(() => {
     apiFetch("/recommendations?limit=6")
@@ -34,6 +35,9 @@ export default function Dashboard() {
     apiFetch("/destinations")
       .then((res) => setDestinations(res.data))
       .catch(() => setDestinations([]));
+    apiFetch("/notifications")
+      .then((res) => setUnreadNotifs(res.unreadCount))
+      .catch(() => setUnreadNotifs(0));
   }, []);
 
   const recommendedDestinations = useMemo(
@@ -65,7 +69,12 @@ export default function Dashboard() {
       >
         {/* Zone 1: Header */}
         {!isSearching ? (
-          <HomeHeader user={user!} onSearchPress={() => setIsSearching(true)} notifCount={1} />
+          <HomeHeader
+            user={user!}
+            onSearchPress={() => setIsSearching(true)}
+            onNotifPress={() => router.push("Notifications")}
+            notifCount={unreadNotifs}
+          />
         ) : (
           <View style={[styles.searchBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
             <Pressable onPress={() => setIsSearching(false)} style={styles.searchClose}>

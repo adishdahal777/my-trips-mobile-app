@@ -13,6 +13,7 @@ import ProfileEditScreen from '../../app/profile-edit';
 import FollowListScreen from '../../app/follow-list';
 import SuggestDestinationScreen from '../../app/suggest-destination';
 import RateAppScreen from '../../app/rate-app';
+import NotificationsScreen from '../../app/notifications';
 
 export type RootStackParams = {
   Landing: undefined;
@@ -26,6 +27,7 @@ export type RootStackParams = {
   FollowList: { userId: string; mode: 'followers' | 'following' };
   SuggestDestination: undefined;
   RateApp: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParams>();
@@ -48,6 +50,7 @@ export default function AppNavigator() {
           <Stack.Screen name="FollowList" component={FollowListScreen} />
           <Stack.Screen name="SuggestDestination" component={SuggestDestinationScreen} />
           <Stack.Screen name="RateApp" component={RateAppScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </>
       ) : (
         <>

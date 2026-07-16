@@ -34,7 +34,7 @@ export async function apiFetch(path: string, options: { method?: string; body?: 
 export async function checkApiHealth(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 12000);
     const res = await fetch(`${API_BASE_URL}/feed`, { signal: controller.signal });
     clearTimeout(timeout);
     return res.ok;
