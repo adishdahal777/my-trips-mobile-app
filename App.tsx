@@ -8,6 +8,7 @@ import { NotificationProvider, useNotifications } from './context/NotificationCo
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { TripProvider } from './context/TripContext';
 import { ForegroundNotificationToast } from './components/ForegroundNotificationToast';
+import { PlaneRefreshOverlay } from './components/PlaneRefreshControl';
 import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef } from './utils/navigation';
 import { setupNotificationListeners } from './utils/push';
@@ -30,6 +31,7 @@ function AppContent() {
       />
       <AppNavigator />
       <ForegroundNotificationToast />
+      <PlaneRefreshOverlay />
     </NavigationContainer>
   );
 }

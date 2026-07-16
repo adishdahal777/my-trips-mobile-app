@@ -2,7 +2,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import React, { useState } from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../../../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../../../components/PlaneRefreshControl";
 import { TripCard } from "../../../components/TripCard";
 import { useTheme } from "../../../context/ThemeContext";
 import { useTrips } from "../../../context/TripContext";
@@ -78,8 +78,6 @@ export default function TripsIndex() {
           ))}
         </ScrollView>
       </View>
-
-      <PlaneRefreshBanner visible={refreshing} />
       <FlatList
         data={filteredTrips}
         keyExtractor={(item) => item.id}

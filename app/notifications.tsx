@@ -1,7 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonImage } from "../components/SkeletonImage";
@@ -98,8 +98,6 @@ export default function Notifications() {
           <Text style={[styles.markAllText, { color: colors.accent }]}>Mark all as read</Text>
         </Pressable>
       )}
-
-      <PlaneRefreshBanner visible={refreshing} />
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}

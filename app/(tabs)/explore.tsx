@@ -2,7 +2,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { Flame } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../../components/FeedTripCard";
 import { SkeletonImage } from "../../components/SkeletonImage";
@@ -68,7 +68,6 @@ export default function Explore() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
-      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

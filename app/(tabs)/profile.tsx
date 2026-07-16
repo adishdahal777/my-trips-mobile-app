@@ -3,7 +3,7 @@ import { launchImageLibrary } from "react-native-image-picker";
 import React from "react";
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { router } from "../../utils/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -97,7 +97,6 @@ export default function Profile() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.surface }]}>
-      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scroll}

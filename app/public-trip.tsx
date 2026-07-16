@@ -5,7 +5,7 @@ import React, { useCallback, useState } from "react";
 import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OsmMapView } from "../components/OsmMapView";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { ShareSheet } from "../components/ShareSheet";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -83,7 +83,6 @@ export default function PublicTrip() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<PlaneRefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

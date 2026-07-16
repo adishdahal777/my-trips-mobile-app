@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DestinationCard } from "../../components/DestinationCard";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { ExpenseFeedItem } from "../../components/ExpenseFeedItem";
 import { FeaturedTripCard } from "../../components/FeaturedTripCard";
 import { HomeHeader } from "../../components/HomeHeader";
@@ -73,7 +73,6 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
-      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scroll}

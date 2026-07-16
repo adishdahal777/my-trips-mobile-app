@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FeedTripCard } from "../components/FeedTripCard";
 import { NoteCard } from "../components/NoteCard";
-import { PlaneRefreshBanner, PlaneRefreshControl } from "../components/PlaneRefreshControl";
+import { PlaneRefreshControl } from "../components/PlaneRefreshControl";
 import { ProfileShareSheet } from "../components/ProfileShareSheet";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonImage } from "../components/SkeletonImage";
@@ -106,7 +106,6 @@ export default function UserProfile() {
         rightIcon="share-outline"
         onRightPress={() => setShareVisible(true)}
       />
-      <PlaneRefreshBanner visible={refreshing} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
