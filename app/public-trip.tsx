@@ -101,10 +101,10 @@ export default function PublicTrip() {
               </Pressable>
             </View>
             <View style={styles.heroBottom}>
-              <View style={styles.heroUserRow}>
+              <Pressable onPress={() => router.push("UserProfile", { userId: user.id })} style={styles.heroUserRow}>
                 <SkeletonImage source={{ uri: user.avatar }} style={styles.heroAvatar} />
                 <Text style={styles.heroUserName}>{user.name}</Text>
-              </View>
+              </Pressable>
               <Text style={styles.heroTitle}>{trip.name}</Text>
               <Text style={styles.heroDest}>{trip.flag} {trip.destination}</Text>
             </View>

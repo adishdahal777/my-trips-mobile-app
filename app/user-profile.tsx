@@ -25,7 +25,7 @@ interface PublicUser {
 
 export default function UserProfile() {
   const { colors } = useTheme();
-  const { user: me } = useAuth();
+  const { user: me, isAuthenticated } = useAuth();
   const route = useRoute<any>();
   const userId = route.params?.userId as string;
 
@@ -122,18 +122,33 @@ export default function UserProfile() {
               <Text style={[styles.statValue, { color: colors.text }]}>{profile.totalTrips ?? 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>Trips</Text>
             </View>
-            <Pressable onPress={() => router.push("FollowList", { userId, mode: "followers" })} style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{profile.followersCount ?? 0}</Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Followers</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("FollowList", { userId, mode: "following" })} style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{profile.followingCount ?? 0}</Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Following</Text>
-            </Pressable>
+            {isAuthenticated ? (
+              <>
+                <Pressable onPress={() => router.push("FollowList", { userId, mode: "followers" })} style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{profile.followersCount ?? 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Followers</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push("FollowList", { userId, mode: "following" })} style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{profile.followingCount ?? 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Following</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{profile.followersCount ?? 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Followers</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{profile.followingCount ?? 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>Following</Text>
+                </View>
+              </>
+            )}
           </View>
 
           <View style={styles.headerActions}>
-            {!isSelf && (
+            {isAuthenticated && !isSelf && (
               <Pressable
                 onPress={toggleFollow}
                 disabled={followBusy}
@@ -217,7 +232,7 @@ export default function UserProfile() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Public Trips</Text>
         <View style={styles.tripsList}>
           {trips.map((trip) => (
-            <FeedTripCard key={trip.id} trip={trip} />
+            <FeedTripCard key={trip.id} trip={trip} isGuest={!isAuthenticated} />
           ))}
           {trips.length === 0 && (
             <View style={styles.emptyState}>
