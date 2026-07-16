@@ -15,6 +15,9 @@ import SuggestDestinationScreen from '../../app/suggest-destination';
 import RateAppScreen from '../../app/rate-app';
 import NotificationsScreen from '../../app/notifications';
 import NotificationSettingsScreen from '../../app/notification-settings';
+import PrivacySecurityScreen from '../../app/privacy-security';
+import TermsOfServiceScreen from '../../app/terms-of-service';
+import ReportBugScreen from '../../app/report-bug';
 
 export type RootStackParams = {
   Landing: undefined;
@@ -30,6 +33,9 @@ export type RootStackParams = {
   RateApp: undefined;
   Notifications: undefined;
   NotificationSettings: undefined;
+  PrivacySecurity: undefined;
+  TermsOfService: undefined;
+  ReportBug: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParams>();
@@ -54,6 +60,9 @@ export default function AppNavigator() {
           <Stack.Screen name="RateApp" component={RateAppScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+          <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
+          <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
+          <Stack.Screen name="ReportBug" component={ReportBugScreen} />
         </>
       ) : (
         <>

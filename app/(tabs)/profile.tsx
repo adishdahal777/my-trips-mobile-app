@@ -1,7 +1,7 @@
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { launchImageLibrary } from "react-native-image-picker";
 import React from "react";
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PlaneRefreshBanner, PlaneRefreshControl } from "../../components/PlaneRefreshControl";
 import { router } from "../../utils/navigation";
@@ -18,6 +18,24 @@ export default function Profile() {
   const stats = React.useMemo(() => calculateUserStats(trips), [trips]);
   const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
   const [followCounts, setFollowCounts] = React.useState({ followers: 0, following: 0 });
+  const [languageModalVisible, setLanguageModalVisible] = React.useState(false);
+  const [languageInput, setLanguageInput] = React.useState("");
+  const [submittingLanguage, setSubmittingLanguage] = React.useState(false);
+
+  const submitLanguageSuggestion = async () => {
+    if (!languageInput.trim()) return;
+    setSubmittingLanguage(true);
+    try {
+      await apiFetch("/language-suggestions", { method: "POST", body: { language: languageInput.trim() } });
+      setLanguageModalVisible(false);
+      setLanguageInput("");
+      Alert.alert("Thanks!", "We've saved your suggestion.");
+    } catch (e: any) {
+      Alert.alert("Couldn't send suggestion", e?.message ?? "Please try again.");
+    } finally {
+      setSubmittingLanguage(false);
+    }
+  };
   const [refreshing, setRefreshing] = React.useState(false);
 
   const loadFollowCounts = React.useCallback(() => {
@@ -126,7 +144,7 @@ export default function Profile() {
           <Section title="Account Settings">
             <Row icon="person-outline" label="Personal Information" onPress={() => router.push("ProfileEdit")} />
             <Row icon="notifications-outline" label="Notification Settings" onPress={() => router.push("NotificationSettings")} />
-            <Row icon="shield-checkmark-outline" label="Privacy & Security" isLast />
+            <Row icon="shield-checkmark-outline" label="Privacy & Security" onPress={() => router.push("PrivacySecurity")} isLast />
           </Section>
 
           <Section title="Preferences">
@@ -142,25 +160,27 @@ export default function Profile() {
                 />
               }
             />
-            <Row icon="wallet-outline" label="Payment Methods" />
             <Row
               icon="globe-outline"
               label="Language"
               right={<Text style={[styles.rowRightText, { color: colors.textMuted }]}>English</Text>}
+              onPress={() => setLanguageModalVisible(true)}
               isLast
             />
           </Section>
 
           <Section title="Help & Support">
             <Row icon="star-outline" label="Rate MyTrips" onPress={() => router.push("RateApp")} />
-            <Row icon="help-circle-outline" label="Help Center" />
-            <Row icon="chatbubble-outline" label="Contact Us" />
-            <Row icon="document-text-outline" label="Terms of Service" isLast />
+            <Row icon="bug-outline" label="Report a Bug" onPress={() => router.push("ReportBug")} />
+            <Row icon="document-text-outline" label="Terms of Service" onPress={() => router.push("TermsOfService")} isLast />
           </Section>
 
           <Pressable
-            onPress={async () => {
-              await logout();
+            onPress={() => {
+              Alert.alert("Log Out", "Are you sure you want to log out?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Log Out", style: "destructive", onPress: () => logout() },
+              ]);
             }}
             style={[styles.logoutBtn, { backgroundColor: colors.card, borderColor: colors.dangerLight }]}
           >
@@ -171,6 +191,37 @@ export default function Profile() {
           <Text style={[styles.version, { color: colors.textMuted }]}>Version 2.4.0 (2026)</Text>
         </View>
       </ScrollView>
+
+      <Modal visible={languageModalVisible} transparent animationType="fade" onRequestClose={() => setLanguageModalVisible(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setLanguageModalVisible(false)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <Ionicons name="globe-outline" size={28} color={colors.accent} style={{ marginBottom: 12 }} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>More Languages Coming Soon</Text>
+            <Text style={[styles.modalBody, { color: colors.textSecondary }]}>
+              MyTrips currently supports English. Tell us which language you'd like to see next and we'll prioritize it.
+            </Text>
+            <TextInput
+              value={languageInput}
+              onChangeText={setLanguageInput}
+              placeholder="e.g. Nepali, Hindi, Spanish..."
+              placeholderTextColor={colors.inputPlaceholder}
+              style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setLanguageModalVisible(false)} style={styles.modalCancelBtn}>
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={submitLanguageSuggestion}
+                disabled={!languageInput.trim() || submittingLanguage}
+                style={[styles.modalSubmitBtn, { backgroundColor: colors.accent, opacity: !languageInput.trim() || submittingLanguage ? 0.5 : 1 }]}
+              >
+                <Text style={styles.modalSubmitText}>{submittingLanguage ? "Sending..." : "Suggest"}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -237,4 +288,14 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 14, fontWeight: "700", marginLeft: 8 },
   version: { textAlign: "center", marginTop: 24, fontSize: 11 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", padding: 24 },
+  modalCard: { width: "100%", borderRadius: 16, padding: 24, alignItems: "center" },
+  modalTitle: { fontSize: 16, fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  modalBody: { fontSize: 13, textAlign: "center", lineHeight: 19, marginBottom: 16 },
+  modalInput: { width: "100%", borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, marginBottom: 16 },
+  modalActions: { flexDirection: "row", gap: 10, width: "100%" },
+  modalCancelBtn: { flex: 1, paddingVertical: 12, alignItems: "center" },
+  modalCancelText: { fontSize: 14, fontWeight: "600" },
+  modalSubmitBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center" },
+  modalSubmitText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
 });
