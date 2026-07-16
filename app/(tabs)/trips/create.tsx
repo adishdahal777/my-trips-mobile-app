@@ -447,7 +447,7 @@ export default function CreateTrip() {
 
               <RequiredLabel color={colors.textMuted} dangerColor={colors.danger}>Budget</RequiredLabel>
               <View style={[styles.budgetInput, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.budgetSign, { color: colors.textMuted }]}>Rs</Text>
+                <Text style={[styles.budgetSign, { color: colors.textMuted }]}>Nrs</Text>
                 <TextInput value={draft.budget} onChangeText={(t) => setDraft({ ...draft, budget: t })} placeholder="2000" placeholderTextColor={colors.inputPlaceholder} keyboardType="numeric" style={[styles.budgetText, { color: colors.text }]} />
               </View>
 

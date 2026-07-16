@@ -385,7 +385,7 @@ export default function TripDetail() {
           <Text style={[styles.expSheetTitle, { color: colors.text }]}>Add Expense</Text>
           <View style={styles.expAmtWrap}>
             <View style={[styles.expAmtInput, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.expAmtSign, { color: colors.textMuted }]}>Rs</Text>
+              <Text style={[styles.expAmtSign, { color: colors.textMuted }]}>Nrs</Text>
               <TextInput value={expAmt} onChangeText={setExpAmt} placeholder="0.00" placeholderTextColor={colors.inputPlaceholder} keyboardType="numeric" style={[styles.expAmtText, { color: colors.text }]} autoFocus />
             </View>
           </View>
