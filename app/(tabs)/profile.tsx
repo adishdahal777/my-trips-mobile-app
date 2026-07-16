@@ -15,7 +15,6 @@ export default function Profile() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { trips } = useTrips();
   const stats = React.useMemo(() => calculateUserStats(trips), [trips]);
-  const [notifs, setNotifs] = React.useState(true);
   const [uploadingAvatar, setUploadingAvatar] = React.useState(false);
   const [followCounts, setFollowCounts] = React.useState({ followers: 0, following: 0 });
 
@@ -109,18 +108,7 @@ export default function Profile() {
         <View style={styles.settingsArea}>
           <Section title="Account Settings">
             <Row icon="person-outline" label="Personal Information" onPress={() => router.push("ProfileEdit")} />
-            <Row
-              icon="notifications-outline"
-              label="Push Notifications"
-              right={
-                <Switch
-                  value={notifs}
-                  onValueChange={setNotifs}
-                  trackColor={{ false: colors.border, true: colors.accent }}
-                  thumbColor="#fff"
-                />
-              }
-            />
+            <Row icon="notifications-outline" label="Notification Settings" onPress={() => router.push("NotificationSettings")} />
             <Row icon="shield-checkmark-outline" label="Privacy & Security" isLast />
           </Section>
 

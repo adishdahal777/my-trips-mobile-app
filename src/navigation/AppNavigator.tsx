@@ -14,6 +14,7 @@ import FollowListScreen from '../../app/follow-list';
 import SuggestDestinationScreen from '../../app/suggest-destination';
 import RateAppScreen from '../../app/rate-app';
 import NotificationsScreen from '../../app/notifications';
+import NotificationSettingsScreen from '../../app/notification-settings';
 
 export type RootStackParams = {
   Landing: undefined;
@@ -28,6 +29,7 @@ export type RootStackParams = {
   SuggestDestination: undefined;
   RateApp: undefined;
   Notifications: undefined;
+  NotificationSettings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParams>();
@@ -51,6 +53,7 @@ export default function AppNavigator() {
           <Stack.Screen name="SuggestDestination" component={SuggestDestinationScreen} />
           <Stack.Screen name="RateApp" component={RateAppScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
         </>
       ) : (
         <>

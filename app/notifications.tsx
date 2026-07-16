@@ -4,6 +4,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonImage } from "../components/SkeletonImage";
+import { useNotifications } from "../context/NotificationContext";
 import { useTheme } from "../context/ThemeContext";
 import { apiFetch } from "../services/api";
 import { router } from "../utils/navigation";
@@ -29,6 +30,7 @@ const ICONS: Record<string, string> = {
 
 export default function Notifications() {
   const { colors } = useTheme();
+  const { refresh: refreshUnreadCount, decrement: decrementUnreadCount, reset: resetUnreadCount } = useNotifications();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +48,8 @@ export default function Notifications() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    refreshUnreadCount();
+  }, [load, refreshUnreadCount]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -56,6 +59,7 @@ export default function Notifications() {
 
   const markAllRead = async () => {
     setItems((prev) => prev.map((n) => ({ ...n, status: "read" })));
+    resetUnreadCount();
     try {
       await apiFetch("/notifications/read-all", { method: "POST" });
     } catch {
@@ -66,6 +70,7 @@ export default function Notifications() {
   const handlePress = async (item: NotificationItem) => {
     if (item.status === "unread") {
       setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, status: "read" } : n)));
+      decrementUnreadCount();
       apiFetch(`/notifications/${item.id}/read`, { method: "POST" }).catch(() => {});
     }
 
@@ -80,7 +85,12 @@ export default function Notifications() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Notifications" showBack />
+      <ScreenHeader
+        title="Notifications"
+        showBack
+        rightIcon="settings-outline"
+        onRightPress={() => router.push("NotificationSettings")}
+      />
 
       {hasUnread && (
         <Pressable onPress={markAllRead} style={styles.markAllRow}>

@@ -11,6 +11,7 @@ import { RecommendedTripCard } from "../../components/RecommendedTripCard";
 import { StatsBanner } from "../../components/StatsBanner";
 import { TripSmallCard } from "../../components/TripSmallCard";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useTrips } from "../../context/TripContext";
 import { apiFetch } from "../../services/api";
@@ -26,7 +27,7 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     apiFetch("/recommendations?limit=6")
@@ -35,9 +36,6 @@ export default function Dashboard() {
     apiFetch("/destinations")
       .then((res) => setDestinations(res.data))
       .catch(() => setDestinations([]));
-    apiFetch("/notifications")
-      .then((res) => setUnreadNotifs(res.unreadCount))
-      .catch(() => setUnreadNotifs(0));
   }, []);
 
   const recommendedDestinations = useMemo(
@@ -73,7 +71,7 @@ export default function Dashboard() {
             user={user!}
             onSearchPress={() => setIsSearching(true)}
             onNotifPress={() => router.push("Notifications")}
-            notifCount={unreadNotifs}
+            notifCount={unreadCount}
           />
         ) : (
           <View style={[styles.searchBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>

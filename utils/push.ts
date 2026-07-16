@@ -1,5 +1,7 @@
 import messaging from "@react-native-firebase/messaging";
 import { Platform } from "react-native";
+import { showForegroundToast } from "../components/ForegroundNotificationToast";
+import { bumpUnreadFromOutsideReact } from "../context/NotificationContext";
 import { apiFetch } from "../services/api";
 import { router } from "./navigation";
 
@@ -55,9 +57,17 @@ export async function unregisterPushToken() {
 // Wires all three "app state" notification paths. Call once near app root.
 export function setupNotificationListeners() {
   const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-    // App is open and in the foreground — no OS banner is shown automatically on iOS,
-    // but the data is already delivered here for an in-app toast/badge update if desired.
-    console.log("[push] foreground message", remoteMessage);
+    // iOS only shows the native banner while foregrounded if the app registers a
+    // UNUserNotificationCenterDelegate (native side) — this in-app toast + badge
+    // bump guarantees visible feedback regardless of that native wiring.
+    bumpUnreadFromOutsideReact();
+
+    const data = (remoteMessage.data ?? {}) as Record<string, string>;
+    showForegroundToast({
+      title: remoteMessage.notification?.title ?? "New notification",
+      body: remoteMessage.notification?.body ?? "",
+      onPress: () => handleNotificationOpen(data),
+    });
   });
 
   const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (token) => {
