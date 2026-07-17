@@ -6,16 +6,20 @@ export function SkeletonImage(props: ImageProps) {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <View style={props.style}>
+    <View style={[props.style, styles.clip]}>
       <Image
         {...props}
-        style={[StyleSheet.absoluteFill, props.style]}
+        style={StyleSheet.absoluteFill}
         onLoad={(e) => {
           setLoaded(true);
           props.onLoad?.(e);
         }}
       />
-      {!loaded && <Skeleton style={[StyleSheet.absoluteFill, props.style]} />}
+      {!loaded && <Skeleton style={StyleSheet.absoluteFill} />}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  clip: { overflow: "hidden" },
+});
